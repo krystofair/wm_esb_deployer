@@ -25,11 +25,11 @@ def _load_config_content(filename):
 class LoadingConfigurationTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        os.makedirs('./config.d/TEST', exist_ok=True)
-        os.makedirs('./config.d/PROD', exist_ok=True)
-        _load_config_content("./config.d/PROD/init.sh")
-        _load_config_content("./config.d/TEST/init.sh")
-        with open('./config.d/TEST/server2.sh', 'w') as specific_change_cfg:
+        os.makedirs('./config.d/test', exist_ok=True)
+        os.makedirs('./config.d/prod', exist_ok=True)
+        _load_config_content("./config.d/prod/init.sh")
+        _load_config_content("./config.d/test/init.sh")
+        with open('./config.d/test/server2.sh', 'w') as specific_change_cfg:
             specific_change_cfg.write("USERNAME=klapykrz_changed")
         os.environ['CONFIG_DIR'] = './config.d'
 
@@ -48,12 +48,12 @@ class LoadingConfigurationTest(unittest.TestCase):
         self.assertEqual(os.environ['USERNAME'], 'klapykrz_changed')
 
     def test_errors_from_loading_configuration(self):
-        os.remove('./config.d/PROD/init.sh')
+        os.remove('./config.d/prod/init.sh')
         result = config.load_configuration('prod')
         self.assertFalse(result)
 
     def test_raise_exception_in_load_config(self):
-        os.remove('./config.d/PROD/init.sh')
+        os.remove('./config.d/prod/init.sh')
         with pytest.raises(errors.LoadingConfigurationError):
             config.load_config('prod', '')
 
@@ -66,8 +66,20 @@ class BuildingPackage(unittest.TestCase):
 
 
 class ConfigAndBuildTC(unittest.TestCase):
+    def setUp(self) -> None:
+        os.makedirs('./config.d/testing', exist_ok=True)
+        _load_config_content("./config.d/testing/init.sh")
+        with open('./config.d/testing/server2.sh', 'w') as specific_change_cfg:
+            specific_change_cfg.write("USERNAME=klapykrz_changed")
+            specific_change_cfg.write("CI_REPO_DIR=repository")
+        os.environ['CONFIG_DIR'] = './config.d'
+
+    def tearDown(self):
+        shutil.rmtree('./config.d')
+
     def test_set_CI_REPO_DIR_and_use_it_in_making_packages(self):
         try:
+            config.load_configuration('testing')
             build.clean_directory_for_new_build(os.environ['CI_REPO_DIR'])
         except KeyError:
             self.fail("CI_REPO_DIR cannot be found.")

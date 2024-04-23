@@ -53,11 +53,10 @@ def load_configuration(env: str, node: str = '') -> bool:
     :param node: optional argument for configurate specific node
     :return: True if loaded, False otherwise
     """
-    environment = env.upper()
     try:
-        load_config(environment, 'init')
+        load_config(env, 'init')
         if node:
-            load_config(environment, node)
+            load_config(env, node)
     except errors.LoadingConfigurationError as e:
         log.error(e)
         return False
