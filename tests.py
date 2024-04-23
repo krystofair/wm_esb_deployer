@@ -78,11 +78,8 @@ class ConfigAndBuildTC(unittest.TestCase):
         shutil.rmtree('./config.d')
 
     def test_set_CI_REPO_DIR_and_use_it_in_making_packages(self):
-        try:
-            config.load_configuration('testing')
-            build.clean_directory_for_new_build(os.environ['CI_REPO_DIR'])
-        except KeyError:
-            self.fail("CI_REPO_DIR cannot be found.")
+        config.load_configuration('testing', 'server2')
+        build.clean_directory_for_new_build()
         result = build.build_package('TpOssAdapterDms')
-        self.assertTrue(result, "TpOssAdapterDms.zip created.")
+        self.assertTrue(result, "TpOssAdapterDms.zip not created.")
 
