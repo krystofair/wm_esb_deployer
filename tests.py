@@ -4,6 +4,7 @@ import shutil
 
 import errors
 import config
+import build
 
 import pytest
 
@@ -55,3 +56,21 @@ class LoadingConfigurationTest(unittest.TestCase):
         os.remove('./config.d/PROD/init.sh')
         with pytest.raises(errors.LoadingConfigurationError):
             config.load_config('prod', '')
+
+
+class BuildingPackage(unittest.TestCase):
+    def test_making_package_zip_archive(self):
+        build.clean_directory_for_new_build()
+        result = build.build_package('TpOssAdapterDms')
+        self.assertTrue(result)
+
+
+class ConfigAndBuildTC(unittest.TestCase):
+    def test_set_CI_REPO_DIR_and_use_it_in_making_packages(self):
+        try:
+            build.clean_directory_for_new_build(os.environ['CI_REPO_DIR'])
+        except KeyError:
+            self.fail("CI_REPO_DIR cannot be found.")
+        result = build.build_package('TpOssAdapterDms')
+        self.assertTrue(result, "TpOssAdapterDms.zip created.")
+

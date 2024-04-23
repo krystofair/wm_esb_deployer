@@ -1,10 +1,13 @@
 import subprocess
 import pathlib
 import os
-import logging as log
+import logging
 import functools
 
 import errors
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 
 @functools.lru_cache(maxsize=1)
