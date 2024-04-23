@@ -4,7 +4,7 @@ import pathlib
 import os
 import subprocess
 import logging
-from collections import namedtuple
+
 
 logging.basicConfig(level=logging.INFO, format="%(created)f |%(levelname)s| %(name)s %(lineno)d %(message)s -_-")
 log = logging.getLogger(__name__)
@@ -13,6 +13,10 @@ REPO_DIR = '.'
 
 
 def clean_directory_for_new_build(directory='.'):
+    """
+    Delete all build_* directories whose were created by deployer
+    :param directory: directory where to find such a build_*-s.
+    """
     for entry in os.scandir(directory):
         if entry.is_dir() and entry.name.startswith("build_"):
             shutil.rmtree(entry.path)
