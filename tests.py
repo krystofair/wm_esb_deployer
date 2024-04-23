@@ -71,7 +71,7 @@ class ConfigAndBuildTC(unittest.TestCase):
         _load_config_content("./config.d/testing/init.sh")
         with open('./config.d/testing/server2.sh', 'w') as specific_change_cfg:
             specific_change_cfg.write("USERNAME=klapykrz_changed")
-            specific_change_cfg.write("CI_REPO_DIR=repository")
+            specific_change_cfg.write("\nCI_REPO_DIR=repository")
         os.environ['CONFIG_DIR'] = './config.d'
 
     def tearDown(self):
