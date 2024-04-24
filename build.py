@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.INFO, format="%(created)f |%(levelname)s| %(na
 log = logging.getLogger(__name__)
 SRC_DIR = 'repository/packages'  # directory which contains a code, like /src/ in Java
 REPO_DIR = '.'
+REPO_DIR_ENV_VARIABLE_NAME = 'CI_REPO_DIR'
 
 
 def clean_directory_for_new_build(directory='.'):
@@ -22,10 +23,10 @@ def clean_directory_for_new_build(directory='.'):
             shutil.rmtree(entry.path)
 
 
-def build_package(name: str, ref: str = 'HEAD', skip_checks_errors = False) -> bool:
+def build_package(name: str, ref: str = 'HEAD', skip_check_archive_exist = False) -> bool:
     """
     Building ZIP from package and left it in working dir.
-    :param skip_checks_errors: if you should do things quickly
+    :param skip_check_archive_exist: if you should do things quickly
     :param name: name of package
     :param ref: name of GIT commit
     :return: True if builded, False otherwise
@@ -34,7 +35,7 @@ def build_package(name: str, ref: str = 'HEAD', skip_checks_errors = False) -> b
     error = False
     try:
         try:
-            REPO_DIR = os.environ["CI_REPO_DIR"]  # FIXME: I don't know which one should be here now.
+            REPO_DIR = os.environ[REPO_DIR_ENV_VARIABLE_NAME]
         except KeyError:
             pass
         os.mkdir(f"build_{ref}")
@@ -43,7 +44,7 @@ def build_package(name: str, ref: str = 'HEAD', skip_checks_errors = False) -> b
         if result.returncode == 0:
             if 'zip' in [n for n, _ in shutil.get_archive_formats()]:
                 shutil.make_archive(f"build_{ref}/{name}", 'zip', root_dir=f"{REPO_DIR}/{SRC_DIR}/{name}")
-                if not skip_checks_errors:
+                if not skip_check_archive_exist:
                     try:
                         if not [file for file in os.scandir(f"build_{ref}") if file.name == f"{name}.zip"]:
                             log.error('Making archive process failed.')
