@@ -36,7 +36,7 @@ def load_config(env: str, node: str) -> None:
             lines = filter(None, map(str.strip, cfg.readlines()))
             lines = filter(lambda x: x.startswith('#'), lines)
             for line in lines:
-                key, value = line.split('=')
+                key, value = [(k.strip(), v.strip()) for k, v in line.split('=')]
                 os.environ[key] = value
     except (ValueError, OSError, FileNotFoundError, KeyError) as e:
         log.exception(e)
