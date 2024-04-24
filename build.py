@@ -32,7 +32,11 @@ def build_package(name: str, ref: str = 'HEAD', skip_check_archive_exist = False
     """
     error = False
     try:
-        repository_dir = os.environ[settings.REPO_DIR_ENV_VAR] or '.'
+        repository_dir = '.'
+        try:
+            repository_dir = os.environ[settings.REPO_DIR_ENV_VAR]
+        except KeyError:
+            pass
         os.mkdir(f"build_{ref}")
         arguments = f"git reset --hard {ref}".split(' ')
         result = subprocess.run(arguments)
