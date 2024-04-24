@@ -8,6 +8,8 @@ import build
 
 import pytest
 
+import settings
+
 
 def _load_config_content(filename):
     lines = list(map(str.strip, """
@@ -30,8 +32,9 @@ class LoadingConfigurationTest(unittest.TestCase):
         _load_config_content("./config.d/prod/init.cfg")
         _load_config_content("./config.d/test/init.cfg")
         with open('./config.d/test/server2.cfg', 'w') as specific_change_cfg:
-            specific_change_cfg.write("USERNAME=klapykrz_changed")
-        os.environ['CONFIG_DIR'] = './config.d'
+            specific_change_cfg.write("USERNAME = klapykrz_changed")
+        settings.CONFIG_DIR_ENV_VAR = 'CONFIG_DIR'
+        os.environ['CONFIG_DIR'] = 'config.d'
 
     def tearDown(self):
         shutil.rmtree('./config.d')

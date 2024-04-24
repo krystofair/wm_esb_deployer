@@ -30,15 +30,15 @@ def get_config_dir(env: str) -> pathlib.Path:
 
 
 def load_config(env: str, node: str) -> None:
-    config = get_config_dir(env) / pathlib.Path(node + '.cfg')
     try:
+        config = get_config_dir(env) / pathlib.Path(node + '.cfg')
         with open(config, 'r') as cfg:
             lines = filter(None, map(str.strip, cfg.readlines()))
             lines = filter(lambda x: x.startswith('#'), lines)
             for line in lines:
                 key, value = line.split('=')
                 os.environ[key] = value
-    except (ValueError, OSError, FileNotFoundError) as e:
+    except (ValueError, OSError, FileNotFoundError, KeyError) as e:
         log.exception(e)
         raise errors.LoadingConfigurationError(env, node)
 
