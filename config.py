@@ -34,10 +34,10 @@ def load_config(env: str, node: str) -> None:
         config = get_config_dir(env) / pathlib.Path(node + '.cfg')
         with open(config, 'r') as cfg:
             lines = filter(None, map(str.strip, cfg.readlines()))
-            lines = filter(lambda x: x.startswith('#'), lines)
+            lines = filter(lambda x: not x.startswith('#'), lines)
             for line in lines:
-                key, value = [(k.strip(), v.strip()) for k, v in line.split('=')]
-                os.environ[key] = value
+                key, value = line.split('=')
+                os.environ[key.strip()] = value.strip()
     except (ValueError, OSError, FileNotFoundError, KeyError) as e:
         log.exception(e)
         raise errors.LoadingConfigurationError(env, node)
