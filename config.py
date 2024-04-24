@@ -5,6 +5,7 @@ import logging
 import functools
 
 import errors
+import settings
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -18,8 +19,8 @@ def get_config_dir(env: str) -> pathlib.Path:
     """
     # this log should appear only once, because this is cached by environment name
     # if this appeared more than one and not because upperCase - that is something wrong
-    log.info(f"getting config dir for environment: {env}") #FIXME: this log doesnt appear in console
-    config_dir = os.environ["CONFIG_DIR"]
+    log.info(f"getting config dir for environment: {env}")
+    config_dir = os.environ[settings.CONFIG_DIR_ENV_VAR]
     config_path = pathlib.Path(config_dir) / env.upper()
     if not config_path.exists() or not config_path.is_dir():
         raise errors.LoadingConfigurationError("Config directory `%s` doesn't exists"
@@ -29,21 +30,17 @@ def get_config_dir(env: str) -> pathlib.Path:
 
 
 def load_config(env: str, node: str) -> None:
-    config = get_config_dir(env) / pathlib.Path(node + '.sh')
-    arguments = f"source {config}".split(' ')
+    config = get_config_dir(env) / pathlib.Path(node + '.cfg')
     try:
-        result = subprocess.run(arguments)  # throws FileNotFoundError for binary to run (source)
-        if result.returncode != 0:
-            raise FileNotFoundError
-    except FileNotFoundError:
-        try:
-            with open(config, 'r') as cfg:
-                for line in filter(None, map(str.strip, cfg.readlines())):
-                    key, value = line.split('=')
-                    os.environ[key] = value
-        except (ValueError, OSError, FileNotFoundError) as e:
-            log.exception(e)
-            raise errors.LoadingConfigurationError(env, node) from None
+        with open(config, 'r') as cfg:
+            lines = filter(None, map(str.strip, cfg.readlines()))
+            lines = filter(lambda x: x.startswith('#'), lines)
+            for line in lines:
+                key, value = line.split('=')
+                os.environ[key] = value
+    except (ValueError, OSError, FileNotFoundError) as e:
+        log.exception(e)
+        raise errors.LoadingConfigurationError(env, node)
 
 
 def load_configuration(env: str, node: str = '') -> bool:

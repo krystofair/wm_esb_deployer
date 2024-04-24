@@ -5,12 +5,11 @@ import os
 import subprocess
 import logging
 
+import settings
+
 
 logging.basicConfig(level=logging.INFO, format="%(created)f |%(levelname)s| %(name)s %(lineno)d %(message)s -_-")
 log = logging.getLogger(__name__)
-SRC_DIR = 'repository/packages'  # directory which contains a code, like /src/ in Java
-REPO_DIR = '.'
-REPO_DIR_ENV_VARIABLE_NAME = 'CI_REPO_DIR'
 
 
 def clean_directory_for_new_build(directory='.'):
@@ -31,19 +30,15 @@ def build_package(name: str, ref: str = 'HEAD', skip_check_archive_exist = False
     :param ref: name of GIT commit
     :return: True if builded, False otherwise
     """
-    global REPO_DIR, SRC_DIR
     error = False
     try:
-        try:
-            REPO_DIR = os.environ[REPO_DIR_ENV_VARIABLE_NAME]
-        except KeyError:
-            pass
+        repository_dir = os.environ[settings.REPO_DIR_ENV_VAR] or '.'
         os.mkdir(f"build_{ref}")
         arguments = f"git reset --hard {ref}".split(' ')
         result = subprocess.run(arguments)
         if result.returncode == 0:
             if 'zip' in [n for n, _ in shutil.get_archive_formats()]:
-                shutil.make_archive(f"build_{ref}/{name}", 'zip', root_dir=f"{REPO_DIR}/{SRC_DIR}/{name}")
+                shutil.make_archive(f"build_{ref}/{name}", 'zip', root_dir=f"{repository_dir}/{settings.SRC_DIR}/{name}")
                 if not skip_check_archive_exist:
                     try:
                         if not [file for file in os.scandir(f"build_{ref}") if file.name == f"{name}.zip"]:
