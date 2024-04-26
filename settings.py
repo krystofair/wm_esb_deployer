@@ -2,6 +2,10 @@
 Settings contains names for environment variables which are used in code.
 This is one place entry point for set up where deployer to search configs etc.
 """
+# set logger globally
+import logging
+logging.basicConfig(level=logging.INFO, format="%(created)f |%(levelname)s| %(name)s %(lineno)d %(message)s -_-")
+log = logging.getLogger(__name__)
 
 # if script is running from another context, otherwise it will be current directory (.)
 REPO_DIR_ENV_VAR = 'REPO_DIR'

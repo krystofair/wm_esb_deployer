@@ -3,13 +3,9 @@ import shutil
 import pathlib
 import os
 import subprocess
-import logging
 
 import settings
-
-
-logging.basicConfig(level=logging.INFO, format="%(created)f |%(levelname)s| %(name)s %(lineno)d %(message)s -_-")
-log = logging.getLogger(__name__)
+from settings import log
 
 
 def clean_directory_for_new_build(directory='.'):
@@ -38,6 +34,7 @@ def build_package(name: str, ref: str = 'HEAD', skip_check_archive_exist = False
         except KeyError:
             pass
         os.mkdir(f"build_{ref}")
+        # before this 'git reset' runner pull the repo
         arguments = f"git reset --hard {ref}".split(' ')
         result = subprocess.run(arguments)
         if result.returncode == 0:
