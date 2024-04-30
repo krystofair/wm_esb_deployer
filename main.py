@@ -1,10 +1,9 @@
 """
 General module to make actions.
 'test' - not implemented, should do some tests by means IntegrationServer and catch developers mistakes;
-'inbound' - prepare packages in inbound directory on specific environment;
 'deploy' - prepare backup and packages in packages/ directory of IS in environment and run 'is_instance update' script;
-'backup' - revert changes by use created backup;
-'prepare' - only prepare packages in 'packages/' directory on IS-es;
+'backup' - not implemented yet, revert changes by use created backup;
+'build' - only prepare packages in 'packages/' directory on IS-es or in inbound if flag is set.
 'stop' - not implemented, stop all instance from environment;
 """
 import sys
@@ -24,6 +23,7 @@ def build_arguments(args=None):
     parser.add_argument('--changes-only', action='store_false',
                         help="Use this flag if you want to deploy all* packages\n*Without excluded packages {}"
                         .format(settings.PACKAGES_TO_EXCLUDE))
+    parser.add_argument('--inbound', action='store_true', help="Use it if you want to load package from inbound.")
 
     # this below arg should be fetched from environment variable set by runner
     # parser.add_argument('tag_name', 'store_value', help='Tag name or commit from Git repository')
