@@ -1,10 +1,12 @@
 import os
 import unittest
 import shutil
+import argparse
 
 import errors
 import config
 import build
+import main
 
 import pytest
 
@@ -85,4 +87,18 @@ class ConfigAndBuildTC(unittest.TestCase):
         build.clean_directory_for_new_build()
         result = build.build_package('TpOssAdapterDms')
         self.assertTrue(result, "TpOssAdapterDms.zip not created.")
+
+
+class TestMainRun(unittest.TestCase):
+    def test_parsing_arguments(self):
+        opts = main.build_arguments([
+            "inbound",
+            "--package",
+            "TpOssAdministrativeTools",
+            "CaOssMock",
+            "TpOssDocument"
+        ])
+        self.assertListEqual(opts.package, ["TpOssAdministrativeTools", "CaOssMock", "TpOssDocument"])
+        self.assertTrue(opts.changes_only)
+        self.assertEqual(opts.action, "inbound")
 

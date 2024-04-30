@@ -19,10 +19,16 @@ Load by searching init.cfg and %name%.cfg files, then load key=value pairs to en
 Lines which starts with '#' are treates as comments.
 example:
     %CONFIG_DIR%
-      + /prod
+      + /%CI_ENVIRONMENT_NAME%
         - init.cfg  # general configuration for environment
         - node001.cfg  # custom config for node001
       + /test
         - init.cfg
 """
 CONFIG_DIR_ENV_VAR = 'CONFIG_DIR'
+ENVIRONMENT_ENV_VAR = 'CI_ENVIRONMENT_NAME'
+
+# TODO: Implement logic to endswith by asterisk. :)
+PACKAGES_TO_EXCLUDE = [
+    "TpOssAdministrativeTools", "TpOssConfig", "TpOssConnectorChannel*"
+]
