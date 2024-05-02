@@ -20,7 +20,7 @@ def get_config_dir(env: str) -> pathlib.Path:
     # if this appeared more than one and not because upperCase - that is something wrong
     log.info(f"getting config dir for environment: {env}")
     config_dir = os.environ[settings.CONFIG_DIR_ENV_VAR]
-    config_path = pathlib.Path(config_dir) / env.upper()
+    config_path = pathlib.Path(config_dir) / env
     if not config_path.exists() or not config_path.is_dir():
         raise errors.LoadingConfigurationError("Config directory `%s` doesn't exists"
                                                " or there is some file with that name"

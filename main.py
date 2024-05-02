@@ -6,10 +6,15 @@ General module to make actions.
 'build' - only prepare packages in 'packages/' directory on IS-es or in inbound if flag is set.
 'stop' - not implemented, stop all instance from environment;
 """
+import os
 import sys
 import argparse
+import subprocess
 
+import config
 import settings
+from settings import log
+import build
 
 
 def build_arguments(args=None):
@@ -17,7 +22,7 @@ def build_arguments(args=None):
         args = sys.argv[1:]
     parser = argparse.ArgumentParser()
     parser.add_argument('action',
-                        help="possible options for action are: 'test', 'inbound', 'prepare', 'deploy', 'backup'"
+                        help="possible options for action are: 'test', 'inbound', 'build', 'deploy', 'backup'"
                              ", 'stop'")
     parser.add_argument('--package', nargs='+', action='extend', help="A list of packages to build archives for.")
     parser.add_argument('--changes-only', action='store_false',
@@ -31,9 +36,46 @@ def build_arguments(args=None):
     return parser.parse_args(args)
 
 
-if __name__ == "__main__":
-    args = build_arguments()
-    for package in args.package_list.split(','):
-        import build
 
-        build.build_package(package, args.tag_name, True)
+
+def action_build(packages, inbound=False, changes_only=True):
+    SOURCE_DIR = settings.SRC_DIR
+    if inbound:
+        for package in packages:
+            if build.build_package(package):
+                log.info("Built {} successfully".format(package))
+            else:
+                log.error("Built {} failed".format(package))
+                break
+    else:
+        if changes_only:
+            pass
+
+
+
+
+def action_deploy(packages, changes):
+    pass
+
+
+if __name__ == "__main__":
+    # parse arguments
+    args = build_arguments()
+    # configure
+    special_config = os.environ[settings.NODE_ENV_VAR]
+    if special_config:
+        config.load_configuration(os.environ[settings.ENVIRONMENT_ENV_VAR], special_config)
+    else:
+        config.load_configuration(os.environ[settings.ENVIRONMENT_ENV_VAR])
+    # run specified action
+    if args.action == "build":
+        action_build(args.package,inbound=args.inbound)
+    if args.action == "deploy":
+        action_build(args.package)
+        if not args.inbound:
+            action_deploy(args.package, changes=False)
+    elif args.action == "":
+        pass
+    else:
+        log.error("Entered unknown action.")
+
