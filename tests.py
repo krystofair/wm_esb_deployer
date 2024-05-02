@@ -1,4 +1,5 @@
 import os
+import subprocess
 import unittest
 import shutil
 
@@ -110,7 +111,7 @@ class TestBuild(unittest.TestCase):
 
     def test_ignoring_namespace(self):
         build.clean_directory_for_new_build()
-        shutil.copytree('repository/packages/TpOssAdapterDms', 'build_test0123/TpOssAdapterDms',
+        shutil.copytree('packages/TpOssAdapterDms', 'build_test0123/TpOssAdapterDms',
                         ignore=shutil.ignore_patterns("ns"))
         try:
             with open('build_test0123/TpOssAdapterDms/manifest.v3', 'r'):
@@ -133,3 +134,13 @@ class TestBuild(unittest.TestCase):
     def test_only_changes_service_copy(self):
         build.clean_directory_for_new_build()
         build.prepare_package_only_changes_services_from_last_commit()
+
+    def test_add_file_cicd_version_to_service(self):
+        os.makedirs("./sprawdzam/", exist_ok=True)
+        os.makedirs("./sprawdzam2/", exist_ok=True)
+        build.add_file_cicd_version_to_service("./sprawdzam/")
+        os.environ[settings.CI_PROJECT_NAME] = 'esboss'
+        os.environ[settings.CI_COMMIT_SHA] = '374ffa03de'
+        build.add_file_cicd_version_to_service("./sprawdzam2/")
+        # delete this test folders ;)
+

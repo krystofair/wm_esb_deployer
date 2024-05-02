@@ -7,6 +7,8 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(created)f |%(levelname)s| %(name)s %(lineno)d %(message)s -_-")
 log = logging.getLogger(__name__)
 
+mock = True  # helping flag to using mocks.
+
 # if script is running from another context, otherwise it will be current directory (.)
 REPO_DIR_ENV_VAR = 'REPO_DIR'
 
@@ -26,9 +28,13 @@ example:
         - init.cfg
 """
 CONFIG_DIR_ENV_VAR = 'CONFIG_DIR'
-ENVIRONMENT_ENV_VAR = 'CI_ENVIRONMENT_NAME'
 
-# TODO: Implement logic to endswith by asterisk. :)
+# gitlab predefined variables used.
+CI_ENVIRONMENT_NAME = 'CI_ENVIRONMENT_NAME'
+CI_COMMIT_SHA = 'CI_COMMIT_SHA'
+CI_COMMIT_TAG = 'CI_COMMIT_TAG'
+CI_PROJECT_NAME = 'CI_PROJECT_NAME'
+
 PACKAGES_TO_EXCLUDE = ["TpOssAdministrativeTools", "TpOssConfig", "TpOssConnectorChannel*"]
 
 # how to find special node config name in environment.
