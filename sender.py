@@ -18,6 +18,7 @@ def _send_to_inbound_by_ssh(ssh_host, ssh_port, src_dir, dst_dir):
     :param dst_dir:
     :return:
     """
+    destination_dir = '/app/esb/{}/instances/{instance_name}/replicate/inbound/'
     sent = True
     try:
         args = f'scp -P {ssh_port} {src_dir} {ssh_host}:{dst_dir}'.split(' ')

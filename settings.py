@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 REPO_DIR_ENV_VAR = 'REPO_DIR'
 
 # where to find sources
-SRC_DIR = 'repository/packages'  # directory which contains a code, like /src/ in Java
+SRC_DIR = 'packages'  # directory which contains a code, like /src/ in Java
 
 # configuration
 """
@@ -29,6 +29,7 @@ CONFIG_DIR_ENV_VAR = 'CONFIG_DIR'
 ENVIRONMENT_ENV_VAR = 'CI_ENVIRONMENT_NAME'
 
 # TODO: Implement logic to endswith by asterisk. :)
-PACKAGES_TO_EXCLUDE = [
-    "TpOssAdministrativeTools", "TpOssConfig", "TpOssConnectorChannel*"
-]
+PACKAGES_TO_EXCLUDE = ["TpOssAdministrativeTools", "TpOssConfig", "TpOssConnectorChannel*"]
+
+# how to find special node config name in environment.
+NODE_ENV_VAR = "NODE_NAME"

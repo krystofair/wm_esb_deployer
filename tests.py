@@ -1,7 +1,6 @@
 import os
 import unittest
 import shutil
-import argparse
 
 import errors
 import config
@@ -102,3 +101,35 @@ class TestMainRun(unittest.TestCase):
         self.assertTrue(opts.changes_only)
         self.assertEqual(opts.action, "inbound")
 
+
+class TestBuild(unittest.TestCase):
+    def test_extract_svc_name(self):
+        diff_line = "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml"
+        service_name = build.extract_service_name(diff_line)
+        self.assertEqual(service_name, "tp.oss.channel.jazz.order.pub:updateCFService")
+
+    def test_ignoring_namespace(self):
+        build.clean_directory_for_new_build()
+        shutil.copytree('repository/packages/TpOssAdapterDms', 'build_test0123/TpOssAdapterDms',
+                        ignore=shutil.ignore_patterns("ns"))
+        try:
+            with open('build_test0123/TpOssAdapterDms/manifest.v3', 'r'):
+                pass
+        except FileNotFoundError:
+            self.fail("File should exist.")
+        try:
+            with open('build_test0123/TpOssAdapterDms/ns/tp/node.idf', 'r'):
+                self.fail("File should not exist.")
+        except FileNotFoundError:
+            pass
+
+    def test_is_package_to_exclude(self):
+        self.assertTrue(build.is_package_to_exclude('TpOssConfig'))
+        self.assertTrue(build.is_package_to_exclude('TpOssAdministrativeTools'))
+        self.assertTrue(build.is_package_to_exclude('TpOssConnectorChannelAtrium'))
+        self.assertFalse(build.is_package_to_exclude('TpOssConnectorAtrium'))
+        self.assertFalse(build.is_package_to_exclude('TpOssChannelNgnp'))
+
+    def test_only_changes_service_copy(self):
+        build.clean_directory_for_new_build()
+        build.prepare_package_only_changes_services_from_last_commit()
