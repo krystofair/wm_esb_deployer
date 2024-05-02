@@ -7,3 +7,7 @@ class BaseDeployerError(Exception):
 
 class LoadingConfigurationError(BaseDeployerError):
     pass
+
+
+class GitOperationError(BaseDeployerError):
+    pass

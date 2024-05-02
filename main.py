@@ -64,9 +64,9 @@ if __name__ == "__main__":
     # configure
     special_config = os.environ[settings.NODE_ENV_VAR]
     if special_config:
-        config.load_configuration(os.environ[settings.ENVIRONMENT_ENV_VAR], special_config)
+        config.load_configuration(os.environ[settings.CI_ENVIRONMENT_NAME], special_config)
     else:
-        config.load_configuration(os.environ[settings.ENVIRONMENT_ENV_VAR])
+        config.load_configuration(os.environ[settings.CI_ENVIRONMENT_NAME])
     # run specified action
     if args.action == "build":
         action_build(args.package,inbound=args.inbound)
