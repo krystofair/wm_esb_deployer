@@ -6,21 +6,14 @@ General module to make actions.
 'build' - only prepare packages in 'packages/' directory on IS-es or in inbound if flag is set.
 'stop' - not implemented, stop all instance from environment;
 """
-import importlib.abc
 import os
 import pathlib
-import shutil
 import sys
 import argparse
-import subprocess
 import inspect
 
-import config
-import errors
-import sender
-import settings
-from settings import log
-import build
+from . import (config, errors, sender, settings, build)
+from .settings import log
 
 
 def get_env_var_or_default(name, default=None):
@@ -65,9 +58,7 @@ def action_build(inbound=False, changes_only=True):
         build.prepare_package_only_changes_services_from_last_commit(commit_deploy)
         sender.send_to_packages_repo()
     else:
-        for package in packages:
-
-            pass
+        pass
     if inbound:
         sender.send_to_inbound()
 
@@ -100,7 +91,7 @@ def main():
         # run specified action
         if args.action == "build":
             if args.changes_only:
-
+                pass
             if args.inbound:  # and args.only_changes - not implemented don't know if this is works. D:
                 packages = set(p[1] for p in [line.split('/') for line in build.get_changes_from_git_diff()] if p[1])
                 for package in packages:

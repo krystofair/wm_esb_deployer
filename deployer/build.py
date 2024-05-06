@@ -6,9 +6,8 @@ import subprocess
 import itertools
 from datetime import datetime
 
-import errors
-import settings
-from settings import log
+from . import errors, settings
+from .settings import log
 
 
 def clean_directory_for_new_build(directory='.'):
