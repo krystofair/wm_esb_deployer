@@ -118,6 +118,8 @@ def build_arguments_save_yaml(args=None):
     parser.add_argument("--filename")
     parser.add_argument("--configdir")
     return parser.parse_args(args)
+
+
 def save_config_from_yaml(filename='init.cfg') -> None:
     """
     Save all environments variable defined by settings as useful,
@@ -134,6 +136,6 @@ def save_config_from_yaml(filename='init.cfg') -> None:
     with open(path / filename, 'w', encoding='utf-8') as cfg:
         for _, key in members:
             try:
-                cfg.write(f"{key} = {os.environ[key]}")
+                cfg.write(f"{key} = {os.environ[key]}\n")
             except KeyError:
                 continue
