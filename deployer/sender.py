@@ -29,3 +29,18 @@ def _send_to_inbound_by_ssh(ssh_host, ssh_port, src_dir, dst_dir):
 
     return sent
 
+
+def send_to_inbound(ref: str = 'HEAD'):
+    """
+    Send prepared packages in build_{ref} to inbound directory
+    per machines in environment.
+    :return: True if good, False otherwise.
+    """
+    # get configuration where to send.
+
+    return None
+
+
+def send_to_packages_repo():
+    path_to_repo = ""
+    return None

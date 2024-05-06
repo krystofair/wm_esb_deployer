@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+
+authors = [
+    {name='Krzysztof Kłapyta', email='krzysztof.klapyta@comarch.com'}
+]
+name = 'esbdeployer'
+version = '0.0.1'
+
+[project.scripts]
+deployer = "deployer.main:main"
+load_config_from_yml = "deployer.main:save_config_from_yaml"

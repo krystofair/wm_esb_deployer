@@ -21,9 +21,9 @@ def clean_directory_for_new_build(directory='.'):
             shutil.rmtree(entry.path)
 
 
-def build_package(name: str, ref: str = 'HEAD', skip_check_archive_exist=False) -> bool:
+def build_package_for_inbound(name: str, ref: str = 'HEAD', skip_check_archive_exist=False) -> bool:
     """
-    Building ZIP from package and left it in working dir.
+    Building ZIP from package and left it in working dir build_{ref}.
     :param skip_check_archive_exist: if you should do things quickly
     :param name: name of package
     :param ref: name of GIT commit
@@ -61,29 +61,34 @@ def build_package(name: str, ref: str = 'HEAD', skip_check_archive_exist=False) 
     return not error
 
 
-def prepare_package_only_changes_services_from_last_commit(ref: str = 'HEAD') -> bool:
+def prepare_package_only_changes_services_from_last_commit() -> bool:
     """
     Prepare directory with metadata and services from ns/
     which were changed across ref commit and previous one.
     :return: True if operation succeed, False otherwise.
     """
+    ref = os.environ[settings.CI_COMMIT_SHA]
     diff_lines = get_changes_from_git_diff(ref, settings.mock)
     log.info("Changed packages: {}".format(list(map(extract_service_name, diff_lines))))
     packages = set(p[1] for p in [line.split('/') for line in diff_lines] if p[1])
     for package in packages:
+        if not is_package(package):
+            log.info(f"Something wrong, this shouldn't be package? {package} skipping.")
+            continue
         if is_package_to_exclude(package):
             continue
         if settings.REPO_DIR_ENV_VAR in os.environ:
             repo_dir = os.environ[settings.REPO_DIR_ENV_VAR]
         else:
             repo_dir = '.'
-
         path = '/'.join([repo_dir, settings.SRC_DIR, package])
-        shutil.copytree(path, f"build_{ref}/{package}/", ignore=shutil.ignore_patterns("ns"))
-    for line in diff_lines:
-        src_dir_path = '/'.join(line.split('/')[:-1])
-        dst_dir_path = '/'.join(line.split('/')[1:-1])
-        shutil.copytree(src_dir_path, f"build_{ref}/{dst_dir_path}/", dirs_exist_ok=True)
+        build_dir = settings.BUILD_DIR.format(ref)
+        shutil.copytree(path, f"{build_dir}/{package}/", ignore=shutil.ignore_patterns("ns"))
+        for line in diff_lines:
+            src_dir_path = '/'.join(line.split('/')[:-1])  # with packages/ dir
+            dst_dir_path = '/'.join(line.split('/')[1:-1])  # without packages/ dir
+            shutil.copytree(src_dir_path, f"{build_dir}/{dst_dir_path}/", dirs_exist_ok=True)
+    return True
 
 
 @functools.cache
@@ -97,23 +102,14 @@ def is_package_to_exclude(package_name):
 
 
 @functools.cache
+def is_package(p: str) -> bool:
+    if p.startswith("TpOss") or p.startswith("CaOss") or p.startswith("Wm") or p.startswith("Default"):
+        return True
+    return False
+
+
+@functools.cache
 def get_changes_from_git_diff(ref: str = 'HEAD', mock=False):
-    arguments = "git log --oneline".split(' ')
-    gitlog_output = subprocess.run(arguments, capture_output=True, encoding='utf-8')
-    if gitlog_output.returncode != 0:
-        raise errors.GitOperationError("git log --oneline failed.")
-    log_lines = gitlog_output.stdout.split('\n')
-    commits = list(map(lambda x: ''.join(itertools.takewhile(lambda y: y != ' ', x)), log_lines))
-    if ref == 'HEAD':
-        idx = 0
-    else:
-        idx = commits.index(ref)
-    previous_commit = commits[idx + 1]
-    arguments = "git diff {} --name-only".format(previous_commit)
-    # !hint encoding.
-    diff = subprocess.run(arguments, capture_output=True, encoding='utf-8')
-    if diff.returncode != 0:
-        raise errors.GitOperationError("git diff --name-only")
     if mock:
         return [
             "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processHandleConfigureCFServiceResultRequest/flow.xml",
@@ -125,8 +121,40 @@ def get_changes_from_git_diff(ref: str = 'HEAD', mock=False):
             "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/handleConfigureCFServiceResult/flow.xml",
             "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/handleConfigureCFServiceResult/node.ndf"
         ]
-    return diff.stdout.split('\n')
+    arguments = "git log --oneline".split(' ')
+    gitlog_output = subprocess.run(arguments, capture_output=True, encoding='utf-8')
+    if gitlog_output.returncode != 0:
+        raise errors.GitOperationError("git log --oneline from `get_changes_from_git_diff function` failed.")
+    log_lines = gitlog_output.stdout.split('\n')
+    commits = list(map(lambda x: ''.join(itertools.takewhile(lambda y: y != ' ', x)), log_lines))
+    if ref == 'HEAD':
+        idx = 0
+    else:
+        idx = commits.index(ref)
+    previous_commit = commits[idx + 1]
+    arguments = "git diff {} --name-only".format(previous_commit)
+    diff = subprocess.run(arguments, capture_output=True, encoding='utf-8')
+    if diff.returncode != 0:
+        raise errors.GitOperationError("git diff --name-only")
+    diff_lines = diff.stdout.split('\n')
+    if 'packages/' not in diff_lines[0]:
+        raise ValueError("Script can be run from wrong directory")
+    return diff_lines
 
+
+def get_all_package():
+    # to chyba nie jest w ogóle potrzebne xD
+    ref = os.environ[settings.CI_COMMIT_SHA]
+    arguments = f"git reset --hard {ref}".split(' ')
+    result = subprocess.run(arguments)
+    if result.returncode != 0:
+        raise errors.GitOperationError("git reset to specific commit")
+    if settings.REPO_DIR_ENV_VAR in os.environ and os.environ[settings.REPO_DIR_ENV_VAR]:
+        packages = [p for p in os.scandir(os.environ[settings.REPO_DIR_ENV_VAR] / pathlib.Path(settings.SRC_DIR))
+                    if is_package(p) and not is_package_to_exclude(p)]
+    else:
+        packages = [p for p in os.scandir(f'./{settings.SRC_DIR}') if is_package(p) and not is_package_to_exclude(p)]
+    return packages
 
 def extract_service_name(diff_line):
     try:
@@ -135,7 +163,7 @@ def extract_service_name(diff_line):
         index = parts.index('tp')
         return '.'.join(parts[index:-1]) + ':' + parts[-1]
     except:
-        log.error(f"This line {diff_line} cannot be parsed as a service name.")
+        log.info(f"This line {diff_line} cannot be parsed as a service name.")
         return ""
 
 

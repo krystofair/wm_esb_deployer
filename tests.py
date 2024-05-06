@@ -66,7 +66,7 @@ class LoadingConfigurationTest(unittest.TestCase):
 class BuildingPackage(unittest.TestCase):
     def test_making_package_zip_archive(self):
         build.clean_directory_for_new_build()
-        result = build.build_package('TpOssAdapterDms')
+        result = build.build_package_for_inbound('TpOssAdapterDms')
         self.assertTrue(result)
 
 
@@ -85,7 +85,7 @@ class ConfigAndBuildTC(unittest.TestCase):
     def test_set_CI_REPO_DIR_and_use_it_in_making_packages(self):
         config.load_configuration('testing', 'server2')
         build.clean_directory_for_new_build()
-        result = build.build_package('TpOssAdapterDms')
+        result = build.build_package_for_inbound('TpOssAdapterDms')
         self.assertTrue(result, "TpOssAdapterDms.zip not created.")
 
 
