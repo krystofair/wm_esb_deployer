@@ -11,3 +11,7 @@ class LoadingConfigurationError(BaseDeployerError):
 
 class GitOperationError(BaseDeployerError):
     pass
+
+
+class LackRequiredConfiguration(BaseDeployerError):
+    pass
