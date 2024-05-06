@@ -4,8 +4,8 @@ This is one place entry point for set up where deployer to search configs etc.
 """
 # set logger globally
 import logging
-logging.basicConfig(level=logging.INFO, format="%(created)f |%(levelname)s| %(name)s %(lineno)d %(message)s -_-")
-log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(created)f |%(levelname)s| %(module)s %(lineno)d %(message)s -_-")
+log = logging.getLogger()
 
 mock = True  # helping flag to using mocks.
 
