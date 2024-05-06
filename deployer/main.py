@@ -120,13 +120,18 @@ def build_arguments_save_yaml(args=None):
     return parser.parse_args(args)
 
 
-def save_config_from_yaml(filename='init.cfg') -> None:
+def save_config_from_yaml() -> None:
     """
+    Function as a scripts (see pyproject.toml),
+    that's why it has one own parser for arguments from stdin.
     Save all environments variable defined by settings as useful,
     which has been set in gitlab job.
-    :param filename: file to where save configuration
     :return: None
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filename")
+    args = parser.parse_args(sys.argv[1:])
+    filename = args.filename
     env_name = os.environ[settings.CI_ENVIRONMENT_NAME]
     members = [member for member in inspect.getmembers(settings)
                if member[0].endswith('ENV_VAR') and 'CONFIG_DIR' not in member[0]]
