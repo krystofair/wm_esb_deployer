@@ -1,13 +1,9 @@
 import pathlib
 import os
-import logging
 import functools
 
-import errors
-import settings
-
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(__name__)
+from . import errors, settings
+from .settings import log
 
 
 @functools.lru_cache(maxsize=1)

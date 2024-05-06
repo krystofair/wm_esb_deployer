@@ -5,8 +5,8 @@ Otherwise, packages will be installed by using IntegrationServer/packages repo
 and using is_instance.sh script to copying for specific instance by their name.
 """
 import subprocess
-import settings
-from settings import log
+from . import settings
+from .settings import log
 
 
 def _send_to_inbound_by_ssh(ssh_host, ssh_port, src_dir, dst_dir):
