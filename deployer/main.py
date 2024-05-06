@@ -5,6 +5,7 @@ General module to make actions.
 'backup' - not implemented yet, revert changes by use created backup;
 'build' - only prepare packages in 'packages/' directory on IS-es or in inbound if flag is set.
 'stop' - not implemented, stop all instance from environment;
+'test' - only try run main, so there will be invoke imports, and add some else;
 """
 import os
 import pathlib
@@ -96,16 +97,12 @@ def main():
                 packages = set(p[1] for p in [line.split('/') for line in build.get_changes_from_git_diff()] if p[1])
                 for package in packages:
                     build.build_package_for_inbound(package, commit_ref)
-
-
         if args.action == "deploy":
             action_build(args.package)
             if not args.inbound:
                 action_deploy(args.package, changes=False)
-        elif args.action == "configure":
-            config_directory = os.environ[settings.CONFIG_DIR_ENV_VAR]
-            with open()
-            for env_vars in os.environ:
+        elif args.action == "test":
+            exit(0)
         else:
             log.error("Entered unknown action.")
     except errors.GitOperationError as e:
