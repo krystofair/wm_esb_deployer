@@ -6,6 +6,13 @@ from . import errors, settings
 from .settings import log
 
 
+def get_env_var_or_default(name, default=None):
+    try:
+        return os.environ[name]
+    except KeyError:
+        return default
+
+
 @functools.lru_cache(maxsize=1)
 def get_config_dir(env: str) -> pathlib.Path:
     """
@@ -50,6 +57,21 @@ def load_configuration(env: str, node: str = '') -> bool:
         if node:
             load_config(env, node)
     except errors.LoadingConfigurationError as e:
+        log.error(e)
+        return False
+    return True
+
+
+def clear_configuration_for_environment(env: str) -> bool:
+    """
+    Delete whole folder of environment from $CONFIG_DIR.
+    :param env: environment name defined in Gitlab JOB.
+    :return: None
+    """
+    try:
+        config_dir = get_env_var_or_default(settings.CONFIG_DIR_ENV_VAR, default='configs.d')
+        os.remove(pathlib.Path(config_dir) / env)
+    except Exception as e:
         log.error(e)
         return False
     return True

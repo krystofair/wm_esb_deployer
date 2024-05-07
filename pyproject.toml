@@ -8,11 +8,12 @@ authors = [
     {name='Krzysztof Kłapyta', email='krzysztof.klapyta@comarch.com'}
 ]
 name = 'esbdeployer'
-version = '0.0.1'
+version = '0.0.2'
 
 [project.scripts]
 deployer = "deployer.main:main"
 save_config_from_yaml = "deployer.main:save_config_from_yaml"
+clean_configuration_per_environment = "deployer.main:clean_configuration"
 
 [tool.setuptools]
 packages = [

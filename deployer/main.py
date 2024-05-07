@@ -17,13 +17,6 @@ from . import (config, errors, sender, settings, build)
 from .settings import log
 
 
-def get_env_var_or_default(name, default=None):
-    try:
-        return os.environ[name]
-    except KeyError:
-        return default
-
-
 def build_arguments(args=None):
     if args is None:
         args = sys.argv[1:]
@@ -74,7 +67,7 @@ def main():
     # parse arguments
     args = build_arguments()
     # configure
-    special_config = get_env_var_or_default(settings.NODE_ENV_VAR)
+    special_config = config.get_env_var_or_default(settings.NODE_ENV_VAR)
     commit_ref = os.environ[settings.CI_COMMIT_SHA]
     try:
         if special_config:
@@ -135,12 +128,25 @@ def save_config_from_yaml() -> None:
     env_name = os.environ[settings.CI_ENVIRONMENT_NAME]
     members = [member for member in inspect.getmembers(settings)
                if member[0].endswith('ENV_VAR') and 'CONFIG_DIR' not in member[0]]
-    config_dir = get_env_var_or_default(settings.CONFIG_DIR_ENV_VAR, default='configs.d')
+    config_dir = config.get_env_var_or_default(settings.CONFIG_DIR_ENV_VAR, default='configs.d')
     path = config_dir / pathlib.Path(env_name)
     os.makedirs(path, exist_ok=True)
-    with open(path / filename, 'w', encoding='utf-8') as cfg:
-        for _, key in members:
-            try:
-                cfg.write(f"{key} = {os.environ[key]}\n")
-            except KeyError:
-                continue
+    try:
+        with open(path / filename, 'x', encoding='utf-8') as cfg:
+            for _, key in members:
+                try:
+                    cfg.write(f"{key} = {os.environ[key]}\n")
+                except KeyError:
+                    continue
+    except FileExistsError:
+        log.info("Configuration already exists. You have to manually clean it up and retry if it changed.")
+
+
+def clean_configuration() -> None:
+    """
+    Script to clean configuration per environment. This should not be a problem,
+    because there will be configuration loaded in yaml files. Otherwise, do not use
+    a job with this script in your pipeline.
+    """
+    environ = os.environ[settings.CI_ENVIRONMENT_NAME]
+    config.clear_configuration_for_environment(environ)
