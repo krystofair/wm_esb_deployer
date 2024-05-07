@@ -12,7 +12,7 @@ version = '0.0.1'
 
 [project.scripts]
 deployer = "deployer.main:main"
-save_config_from_yml = "deployer.main:save_config_from_yaml"
+save_config_from_yaml = "deployer.main:save_config_from_yaml"
 
 [tool.setuptools]
 packages = [
