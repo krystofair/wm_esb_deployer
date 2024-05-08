@@ -1,16 +1,10 @@
 import os
-import subprocess
 import unittest
 import shutil
 
-import errors
-import config
-import build
-import main
+from deployer import *
 
 import pytest
-
-import settings
 
 
 def _load_config_content(filename):
@@ -143,4 +137,30 @@ class TestBuild(unittest.TestCase):
         os.environ[settings.CI_COMMIT_SHA] = '374ffa03de'
         build.add_file_cicd_version_to_service("./sprawdzam2/")
         # delete this test folders ;)
+
+
+class TestSender(unittest.TestCase):
+    def setUp(self) -> None:
+        os.environ[settings.SSH_PORT_ENV_VAR] = '22'
+        os.environ[settings.SSH_ADDRESS_ENV_VAR] = '192.168.56.109'
+        os.environ[settings.IS_NODE_USERNAME_ENV_VAR] = "admin"
+        os.environ[settings.IS_NODE_PRIVKEY_ENV_VAR] = "./admin.privkey"
+        os.environ[settings.INBOUND_DIR_ENV_VAR] = ""
+        # os.mkdir('./build_TEST')
+
+    def tearDown(self) -> None:
+        os.unsetenv(settings.SSH_PORT_ENV_VAR)
+        os.unsetenv(settings.SSH_ADDRESS_ENV_VAR)
+        os.unsetenv(settings.IS_NODE_USERNAME_ENV_VAR)
+        os.unsetenv(settings.IS_NODE_PRIVKEY_ENV_VAR)
+        # shutil.rmtree("build_TEST")
+
+    def test_sending_to_remote_directory(self):
+        self.skipTest("Take me too long time when trying with key authentication in Windows."
+                      "Probably Linux will operate normally with that.")
+        os.environ[settings.INBOUND_DIR_ENV_VAR] = "/home/admin/packages"
+        self.assertTrue(sender.send_to_inbound("TEST"))
+        os.environ[settings.INBOUND_DIR_ENV_VAR] = ""
+        self.assertTrue(sender.send_to_inbound("TEST"))
+
 
