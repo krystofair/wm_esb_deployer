@@ -34,6 +34,7 @@ INBOUND_DIR_ENV_VAR = 'INBOUND_DIR'
 SSH_ADDRESS_ENV_VAR = 'SSH_ADDRESS'
 SSH_PORT_ENV_VAR = 'SSH_PORT'
 IS_NODE_USERNAME_ENV_VAR = 'IS_NODE_USERNAME'
+IS_NODE_PRIVKEY_ENV_VAR = 'IS_NODE_PRIVKEY'
 IS_INSTANCE_PATH_ENV_VAR = 'IS_INSTANCE_PATH'
 IS_PACKAGE_REPO_PATH_ENV_VAR = 'IS_PACKAGE_REPO_DIR_PATH'
 # how to find special node config name in environment.
@@ -52,8 +53,6 @@ CI_PROJECT_NAME = 'CI_PROJECT_NAME'
 # where to find sources
 SRC_DIR = 'packages'  # directory which contains a code, like /src/ in Java
 BUILD_DIR = 'build_{}'
-
+SUBPROCESS_CMD_TIMEOUT = 90  # timeout in seconds.
 
 PACKAGES_TO_EXCLUDE = ["TpOssAdministrativeTools", "TpOssConfig", "TpOssConnectorChannel*"]
-
-
