@@ -37,6 +37,7 @@ IS_NODE_USERNAME_ENV_VAR = 'IS_NODE_USERNAME'
 IS_NODE_PRIVKEY_ENV_VAR = 'IS_NODE_PRIVKEY'
 IS_INSTANCE_PATH_ENV_VAR = 'IS_INSTANCE_PATH'
 IS_PACKAGE_REPO_PATH_ENV_VAR = 'IS_PACKAGE_REPO_DIR_PATH'
+NODES_ENV_VAR = "NODES_NAMES"  # IPv4 separated by comma (,)
 # how to find special node config name in environment.
 NODE_ENV_VAR = "NODE_NAME"
 # Environment - set below from gitlab pipeline.
@@ -49,10 +50,12 @@ CI_ENVIRONMENT_NAME = 'CI_ENVIRONMENT_NAME'
 CI_COMMIT_SHA = 'CI_COMMIT_SHA'
 CI_COMMIT_TAG = 'CI_COMMIT_TAG'
 CI_PROJECT_NAME = 'CI_PROJECT_NAME'
+CI_MERGE_REQUEST_IID = "CI_MERGE_REQUEST_IID"
 
 # where to find sources
 SRC_DIR = 'packages'  # directory which contains a code, like /src/ in Java
 BUILD_DIR = 'build_{}'
+SOURCE_CODE_EXT = ("xml", "java", "frag", "ndf")  # edit this if something missing
 SUBPROCESS_CMD_TIMEOUT = 90  # timeout in seconds.
 
 PACKAGES_TO_EXCLUDE = ["TpOssAdministrativeTools", "TpOssConfig", "TpOssConnectorChannel*"]

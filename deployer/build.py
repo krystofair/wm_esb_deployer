@@ -6,17 +6,20 @@ import subprocess
 import itertools
 from datetime import datetime
 
+import config
 from . import errors, settings
 from .settings import log
+from .git import GitOperation
 
 
-def clean_directory_for_new_build(directory='.'):
+def clean_directory_after_deploy(ref, directory='.'):
     """
-    Delete all build_* directories whose were created by deployer
-    :param directory: directory where to find such a build_*-s.
+    Delete build_{ref} directory whose were created by deployer.
+    :param directory: directory where to search that build_{ref}.
+    :param ref: reference to merge_iid
     """
     for entry in os.scandir(directory):
-        if entry.is_dir() and entry.name.startswith("build_"):
+        if entry.is_dir() and entry.name == ref:
             shutil.rmtree(entry.path)
 
 
@@ -62,13 +65,18 @@ def build_package_for_inbound(name: str, ref: str = 'HEAD', skip_check_archive_e
 
 def prepare_package_only_changes_services_from_last_commit() -> bool:
     """
+    FIXME: What about more that one commit when services depends each other? \
+    FIXME: I mean someone may forget about do --amend on one's branch.
+    TODO: Write something similar but collecting changed service from whole branch,
+    TODO: which is in MergeRequest.
     Prepare directory with metadata and services from ns/
     which were changed across ref commit and previous one.
+    ZIP operation is not processed here.
     :return: True if operation succeed, False otherwise.
     """
     ref = os.environ[settings.CI_COMMIT_SHA]
     diff_lines = get_changes_from_git_diff(ref, settings.mock)
-    log.info("Changed packages: {}".format(list(map(extract_service_name, diff_lines))))
+    log.info("Changed packages: {}".format(list(map(extract_is_style_service_name, diff_lines))))
     packages = set(p[1] for p in [line.split('/') for line in diff_lines] if p[1])
     for package in packages:
         if not is_package(package):
@@ -126,6 +134,55 @@ def get_changes_from_git_diff(ref: str = 'HEAD', mock=False):
         raise errors.GitOperationError("git log --oneline from `get_changes_from_git_diff function` failed.")
     log_lines = gitlog_output.stdout.split('\n')
     commits = list(map(lambda x: ''.join(itertools.takewhile(lambda y: y != ' ', x)), log_lines))
+
+    if ref == 'HEAD':
+        idx = 0
+    else:
+        idx = commits.index(ref)
+    previous_commit = commits[idx + 1]
+    arguments = "git diff {} --name-only".format(previous_commit)
+    diff = subprocess.run(arguments, capture_output=True, encoding='utf-8')
+    if diff.returncode != 0:
+        raise errors.GitOperationError("git diff --name-only")
+    diff_lines = diff.stdout.split('\n')
+    if 'packages/' not in diff_lines[0]:
+        raise ValueError("Script can be run from wrong directory")
+    return diff_lines
+
+
+@functools.cache
+def get_changed_services(ref: str = None):
+    arguments = "git log --oneline".split(' ')
+    gitlog_output = subprocess.run(arguments, capture_output=True, encoding='utf-8')
+    if gitlog_output.returncode != 0:
+        raise errors.GitOperationError("git log --oneline from `get_changes_from_git_diff function` failed.")
+    log_lines = gitlog_output.stdout.split('\n')
+    commits = list(map(lambda x: ''.join(itertools.takewhile(lambda y: y != ' ', x)), log_lines))
+    if ref:
+        args = "git reset --hard ref".split(' ')
+        result = subprocess.run(args)
+        if result.returncode != 0:
+            raise errors.GitOperationError("reset")
+    last_commit = commits[-1]
+    args = 'git diff {} --name_only'.format(last_commit).split(' ')
+    result = subprocess.run(args, capture_output=True, encoding='utf-8')
+    if result.returncode != 0:
+        raise errors.GitOperationError("diff")
+    names = gitlog_output.stdout.split('\n')
+    if 'packages/' not in names[0]:
+        log.warn("Script can be run from wrong directory")
+    return names
+
+
+@functools.cache
+def get_changes_from_git_diff(ref: str = 'HEAD'):
+    arguments = "git log --oneline".split(' ')
+    gitlog_output = subprocess.run(arguments, capture_output=True, encoding='utf-8')
+    if gitlog_output.returncode != 0:
+        raise errors.GitOperationError("git log --oneline from `get_changes_from_git_diff function` failed.")
+    log_lines = gitlog_output.stdout.split('\n')
+    commits = list(map(lambda x: ''.join(itertools.takewhile(lambda y: y != ' ', x)), log_lines))
+
     if ref == 'HEAD':
         idx = 0
     else:
@@ -142,34 +199,53 @@ def get_changes_from_git_diff(ref: str = 'HEAD', mock=False):
 
 
 def get_all_package():
-    # to chyba nie jest w ogóle potrzebne xD
-    ref = os.environ[settings.CI_COMMIT_SHA]
-    arguments = f"git reset --hard {ref}".split(' ')
-    result = subprocess.run(arguments)
-    if result.returncode != 0:
-        raise errors.GitOperationError("git reset to specific commit")
-    if settings.REPO_DIR_ENV_VAR in os.environ and os.environ[settings.REPO_DIR_ENV_VAR]:
-        packages = [p for p in os.scandir(os.environ[settings.REPO_DIR_ENV_VAR] / pathlib.Path(settings.SRC_DIR))
-                    if is_package(p) and not is_package_to_exclude(p)]
-    else:
-        packages = [p for p in os.scandir(f'./{settings.SRC_DIR}') if is_package(p) and not is_package_to_exclude(p)]
-    return packages
+    repo_dir = config.get_env_var_or_default(settings.REPO_DIR_ENV_VAR, default='.')
+    return [p for p in os.scandir(repo_dir / pathlib.Path(settings.SRC_DIR))
+            if is_package(p) and not is_package_to_exclude(p)]
 
-def extract_service_name(diff_line):
+
+def extract_is_style_service_name(diff_line: str) -> str:
     try:
         parts = diff_line.split('/')
         _ = parts.pop()
         index = parts.index('tp')
         return '.'.join(parts[index:-1]) + ':' + parts[-1]
-    except:
-        log.info(f"This line {diff_line} cannot be parsed as a service name.")
+    except ValueError:
+        log.warn(f"This line {diff_line} cannot be parsed as a service name.")
+        return ""
+    except Exception as e:
+        log.exception(e)
         return ""
 
 
-def add_file_cicd_version_to_service(path):
+def add_file_cicd_version_to_path(path):
     project_name = os.environ[settings.CI_PROJECT_NAME] if settings.CI_PROJECT_NAME in os.environ else '-'
     commit_sha = os.environ[settings.CI_COMMIT_SHA] if settings.CI_COMMIT_SHA in os.environ else '-'
     tag_name = os.environ[settings.CI_COMMIT_TAG] if settings.CI_COMMIT_TAG in os.environ else '-'
     dt_stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(f"{path}/cicd.version", 'w', encoding='utf-8') as cicd_version_file:
         cicd_version_file.write(f"{project_name};{commit_sha};{tag_name};{dt_stamp}")
+
+
+def get_packages_from_changes(changes) -> set:
+    """
+    Collect whole packages (TpOss*, etc.) from changes line produced by `git diff` command.
+    :param changes:
+    :return: set - unique list of packages name
+    """
+    return set(filter(is_package, itertools.chain(*[p for p in (line.split('/') for line in changes)])))
+
+
+def get_services_from_changes(changes) -> set:
+    """
+    Collect only services dir - the folders which has specific files changed.
+    :param changes: list from `git diff` operation.
+    :return: list of path to folders.
+    """
+    services = set()
+    for change in changes:
+        if not change.endswith(settings.SOURCE_CODE_EXT):
+            continue
+        svc = '/'.join(s for s in change.split('/')[:-1])  # exclude last (file) part.
+        services.add(svc)
+    return set(services)

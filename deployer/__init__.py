@@ -1,1 +1,1 @@
-__all__ = ["main", "build", "config", "errors", "sender", "settings"]
+__all__ = ["main", "build", "config", "errors", "sender", "settings", "git"]

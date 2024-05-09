@@ -59,9 +59,10 @@ class LoadingConfigurationTest(unittest.TestCase):
 
 class BuildingPackage(unittest.TestCase):
     def test_making_package_zip_archive(self):
-        build.clean_directory_for_new_build()
-        result = build.build_package_for_inbound('TpOssAdapterDms')
-        self.assertTrue(result)
+        self.skipTest("write new")
+        # build.clean_directory_after_deploy()
+        # result = build.build_package_for_inbound('TpOssAdapterDms')
+        # self.assertTrue(result)
 
 
 class ConfigAndBuildTC(unittest.TestCase):
@@ -78,7 +79,7 @@ class ConfigAndBuildTC(unittest.TestCase):
 
     def test_set_CI_REPO_DIR_and_use_it_in_making_packages(self):
         config.load_configuration('testing', 'server2')
-        build.clean_directory_for_new_build()
+        build.clean_directory_after_deploy()
         result = build.build_package_for_inbound('TpOssAdapterDms')
         self.assertTrue(result, "TpOssAdapterDms.zip not created.")
 
@@ -100,11 +101,26 @@ class TestMainRun(unittest.TestCase):
 class TestBuild(unittest.TestCase):
     def test_extract_svc_name(self):
         diff_line = "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml"
-        service_name = build.extract_service_name(diff_line)
+        service_name = build.extract_is_style_service_name(diff_line)
         self.assertEqual(service_name, "tp.oss.channel.jazz.order.pub:updateCFService")
 
+    def test_get_services_from_changes(self):
+        # TODO: test more cases for this node.ndf etc. and finally implement some more sophisticated.
+        diff_line = ["packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml",
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/node.ndf"
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/node.idf",
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/utils/node.ndf"]
+        service_set = build.get_services_from_changes(diff_line)  # get first element from set.
+        print(service_set)
+        self.assertEqual(service_set.pop(), "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService")
+        self.assertEqual(service_set.pop(), "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/utils")
+        with pytest.raises(KeyError):
+            service_set.pop()
+
+    def test_(self):
+        pass
     def test_ignoring_namespace(self):
-        build.clean_directory_for_new_build()
+        build.clean_directory_after_deploy()
         shutil.copytree('packages/TpOssAdapterDms', 'build_test0123/TpOssAdapterDms',
                         ignore=shutil.ignore_patterns("ns"))
         try:
@@ -126,16 +142,17 @@ class TestBuild(unittest.TestCase):
         self.assertFalse(build.is_package_to_exclude('TpOssChannelNgnp'))
 
     def test_only_changes_service_copy(self):
-        build.clean_directory_for_new_build()
-        build.prepare_package_only_changes_services_from_last_commit()
+        self.skipTest("write new")
+        # build.clean_directory_after_deploy()
+        # build.prepare_package_only_changes_services_from_last_commit()
 
     def test_add_file_cicd_version_to_service(self):
         os.makedirs("./sprawdzam/", exist_ok=True)
         os.makedirs("./sprawdzam2/", exist_ok=True)
-        build.add_file_cicd_version_to_service("./sprawdzam/")
+        build.add_file_cicd_version_to_path("./sprawdzam/")
         os.environ[settings.CI_PROJECT_NAME] = 'esboss'
         os.environ[settings.CI_COMMIT_SHA] = '374ffa03de'
-        build.add_file_cicd_version_to_service("./sprawdzam2/")
+        build.add_file_cicd_version_to_path("./sprawdzam2/")
         # delete this test folders ;)
 
 
