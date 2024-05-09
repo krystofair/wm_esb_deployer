@@ -25,7 +25,7 @@ def build_arguments(args=None):
                         help="possible options for action are: 'test', 'inbound', 'build', 'deploy', 'backup'"
                              ", 'stop'")
     parser.add_argument('--package', nargs='+', action='extend', help="A list of packages to build archives for.")
-    parser.add_argument('--changes-only', action='store_false',
+    parser.add_argument('--no-changes-only', action='store_false',
                         help="Use this flag if you want to deploy all* packages\n*Without excluded packages {}"
                         .format(settings.PACKAGES_TO_EXCLUDE))
     parser.add_argument('--inbound', action='store_true', help="Use it if you want to load package from inbound.")
@@ -37,30 +37,36 @@ def build_arguments(args=None):
 
 
 def action_build(inbound=False, changes_only=True):
-    commit_deploy = os.environ[settings.CI_COMMIT_SHA] or "HEAD"
-    build.clean_directory_for_new_build()
+    merge_iid = os.environ[settings.CI_MERGE_REQUEST_IID]
+    # build.clean_directory_for_new_build()
     if inbound:
         if changes_only:
             packages = build.get_changes_from_git_diff(mock=settings.mock)
         for package in packages:
-            if build.build_package_for_inbound(package, commit_deploy):
+            if build.build_package_for_inbound(package, merge_iid):
                 log.info("Built {} successfully".format(package))
             else:
                 log.error("Built {} failed".format(package))
                 break
     elif changes_only:
-        build.prepare_package_only_changes_services_from_last_commit(commit_deploy)
-        sender.send_to_packages_repo()
-    else:
+        # sender.send_to_packages_repo()
         pass
+
+
+def action_deploy(inbound=False):
+    merge_iid = os.environ[settings.CI_MERGE_REQUEST_IID]
+    env = os.environ[settings.CI_ENVIRONMENT_NAME]
+    nodes = os.environ[settings.NODES_ENV_VAR].split(',')
     if inbound:
-        sender.send_to_inbound()
+        for node in nodes:
+            config.load_configuration(env, node)
+            sender.send_to_inbound(merge_iid)
+    else:
+        # sender.send_to_packages_repo()
+        # run is_instance on machines from environment
+        log.info("not implemented yet.")
 
-
-def action_deploy():
-    pass
-
-
+    build.clean_directory_after_deploy(merge_iid)
 
 
 def main():
@@ -104,15 +110,6 @@ def main():
         exit(-1)
 
 
-def build_arguments_save_yaml(args=None):
-    if args is None:
-        args = sys.argv[1:]
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--filename")
-    parser.add_argument("--configdir")
-    return parser.parse_args(args)
-
-
 def save_config_from_yaml() -> None:
     """
     Function as a scripts (see pyproject.toml),
@@ -138,6 +135,8 @@ def save_config_from_yaml() -> None:
                     cfg.write(f"{key} = {os.environ[key]}\n")
                 except KeyError:
                     continue
+            # save additionally environment name for config
+            cfg.write(f"{[settings.CI_ENVIRONMENT_NAME]} = {os.environ[settings.CI_ENVIRONMENT_NAME]}")
     except FileExistsError:
         log.info("Configuration already exists. You have to manually clean it up and retry if it changed.")
 
