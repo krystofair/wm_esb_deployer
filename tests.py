@@ -78,9 +78,14 @@ class ConfigAndBuildTC(unittest.TestCase):
         shutil.rmtree('./config.d')
 
     def test_set_CI_REPO_DIR_and_use_it_in_making_packages(self):
+        ref = 'TEST'
         config.load_configuration('testing', 'server2')
-        build.clean_directory_after_deploy()
-        result = build.build_package_for_inbound('TpOssAdapterDms')
+        result = build.build_package_for_inbound('TpOssAdapterDms', ref)
+        self.assertTrue(result, "TpOssAdapterDms.zip not created.")
+        # configuration change
+        os.environ["CI_PROJECT_DIR"] = 'sprawdzam'
+        config.load_configuration('testing', 'server2')
+        result = build.build_package_for_inbound('TpOssAdapterDms', ref)
         self.assertTrue(result, "TpOssAdapterDms.zip not created.")
 
 
@@ -94,7 +99,7 @@ class TestMainRun(unittest.TestCase):
             "TpOssDocument"
         ])
         self.assertListEqual(opts.package, ["TpOssAdministrativeTools", "CaOssMock", "TpOssDocument"])
-        self.assertTrue(opts.changes_only)
+        self.assertTrue(opts.no_changes_only)
         self.assertEqual(opts.action, "inbound")
 
 
@@ -106,28 +111,28 @@ class TestBuild(unittest.TestCase):
 
     def test_get_services_from_changes(self):
         # TODO: test more cases for this node.ndf etc. and finally implement some more sophisticated.
-        diff_line = ["packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml",
+        diff_line = ["packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateWorkOrder/something.frag",
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml",
                      "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/node.ndf"
                      "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/node.idf",
                      "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/utils/node.ndf"]
         service_set = build.get_services_from_changes(diff_line)  # get first element from set.
         print(service_set)
-        self.assertEqual(service_set.pop(), "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService")
-        self.assertEqual(service_set.pop(), "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/utils")
-        with pytest.raises(KeyError):
-            service_set.pop()
+        self.assertIn("packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateWorkOrder", service_set)
+        self.assertIn("packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService", service_set)
+        self.assertIn("packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/utils", service_set)
+        self.assertNotIn("packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub", service_set)
 
     def test_get_packages_from_changes(self):
         # TODO: more tests!
         packages = build.get_packages_from_changes([
-            "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml"
+            "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml",
+            "packages/TpOssConnectorChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml"
         ])
-        self.assertEqual("TpOssChannelJazz", packages.pop())
-
-
+        self.assertIn("TpOssChannelJazz", packages)
+        self.assertNotIn("TpOssConnectorChannelJazz", packages)
 
     def test_ignoring_namespace(self):
-        build.clean_directory_after_deploy()
         shutil.copytree('packages/TpOssAdapterDms', 'build_test0123/TpOssAdapterDms',
                         ignore=shutil.ignore_patterns("ns"))
         try:
