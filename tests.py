@@ -117,8 +117,15 @@ class TestBuild(unittest.TestCase):
         with pytest.raises(KeyError):
             service_set.pop()
 
-    def test_(self):
-        pass
+    def test_get_packages_from_changes(self):
+        # TODO: more tests!
+        packages = build.get_packages_from_changes([
+            "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml"
+        ])
+        self.assertEqual("TpOssChannelJazz", packages.pop())
+
+
+
     def test_ignoring_namespace(self):
         build.clean_directory_after_deploy()
         shutil.copytree('packages/TpOssAdapterDms', 'build_test0123/TpOssAdapterDms',

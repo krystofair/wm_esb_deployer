@@ -40,8 +40,11 @@ def action_build(inbound=False, changes_only=True):
     merge_iid = os.environ[settings.CI_MERGE_REQUEST_IID]
     # build.clean_directory_for_new_build()
     if inbound:
-        if changes_only:
-            packages = build.get_changes_from_git_diff(mock=settings.mock)
+        if changes_only:  # experimental
+            changes = build.get_changes_from_git_diff(mock=settings.mock)
+            packages = build.get_packages_from_changes(changes)
+        else:
+            packages = build.get_all_package()
         for package in packages:
             if build.build_package_for_inbound(package, merge_iid):
                 log.info("Built {} successfully".format(package))
@@ -99,7 +102,7 @@ def main():
         if args.action == "deploy":
             action_build(args.package)
             if not args.inbound:
-                action_deploy(args.package, changes=False)
+                action_deploy(args.package)
         elif args.action == "test":
             exit(0)
         else:
