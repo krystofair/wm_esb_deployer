@@ -45,15 +45,22 @@ def load_config(env: str, node: str) -> None:
         raise errors.LoadingConfigurationError(env, node)
 
 
-def load_configuration(env: str, node: str = '') -> bool:
+def load_configuration(env: str) -> bool:
     """
-    Loading configuration as Public API function.
+    Loading configuration of environment as Public API function.
     :param env: environment for which configuration will be searched
-    :param node: optional argument for configurate specific node
     :return: True if loaded, False otherwise
     """
     try:
         load_config(env, 'init')
+    except errors.LoadingConfigurationError as e:
+        log.error(e)
+        return False
+    return True
+
+
+def load_node_configuration(env: str, node: str) -> bool:
+    try:
         if node:
             load_config(env, node)
     except errors.LoadingConfigurationError as e:
@@ -75,3 +82,19 @@ def clear_configuration_for_environment(env: str) -> bool:
         log.error(e)
         return False
     return True
+
+
+def find_node_configs(env: str) -> list[pathlib.Path|str]:
+    cfg_dir = get_config_dir(env)
+    nodes_config_list = [entry.name for entry in os.scandir(cfg_dir)
+                         if entry.name.endswith('.cfg') and entry.name != "init.cfg"]
+    return nodes_config_list
+
+
+def get_build_dir(ref) -> pathlib.Path|str:
+    """Create if not exists and return name of build dir. Used setting about where all build dir are."""
+    ci_project_dir = get_env_var_or_default("CI_PROJECT_DIR", default=".")
+    builds_dir = get_env_var_or_default(settings.BUILD_DIR_ENV_VAR, default=ci_project_dir)
+    build_dir = "{}/build_{}".format(builds_dir, ref)
+    os.makedirs(builds_dir, exist_ok=True)
+    return build_dir

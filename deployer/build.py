@@ -22,10 +22,7 @@ def build_package_for_inbound(name: str, ref: str, skip_check_archive_exist=Fals
     try:
         # initialize variables
         repository_dir = config.get_env_var_or_default(settings.REPO_DIR_ENV_VAR, default='.')
-        ci_project_dir = config.get_env_var_or_default("CI_PROJECT_DIR", default=".")
-        builds_dir = config.get_env_var_or_default(settings.BUILD_DIR_ENV_VAR, default=ci_project_dir)
-        build_dir = "{}/build_{}".format(builds_dir, ref)
-        os.makedirs(builds_dir, exist_ok=True)
+        build_dir = config.get_build_dir(ref)
         os.makedirs(build_dir)
         if 'zip' in [n for n, _ in shutil.get_archive_formats()]:
             shutil.make_archive(f"{build_dir}/{name}",

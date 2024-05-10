@@ -41,7 +41,9 @@ class LoadingConfigurationTest(unittest.TestCase):
         self.assertEqual(os.environ['HOST'], '192.168.56.100')
 
     def test_variables_are_properly_loaded_for_specific(self):
-        result = config.load_configuration('test', 'server2')
+        result = config.load_configuration('test')
+        self.assertTrue(result)
+        result = config.load_node_configuration('test', 'server2')
         self.assertTrue(result)
         self.assertEqual(os.environ['HOST'], '192.168.56.100')
         self.assertEqual(os.environ['USERNAME'], 'klapykrz_changed')
@@ -55,6 +57,10 @@ class LoadingConfigurationTest(unittest.TestCase):
         os.remove('./config.d/prod/init.cfg')
         with pytest.raises(errors.LoadingConfigurationError):
             config.load_config('prod', '')
+
+    def test_find_node_configs(self):
+        configs = config.find_node_configs('test')
+        self.assertIn("server2.cfg", configs)
 
 
 class BuildingPackage(unittest.TestCase):
@@ -79,12 +85,14 @@ class ConfigAndBuildTC(unittest.TestCase):
 
     def test_set_CI_REPO_DIR_and_use_it_in_making_packages(self):
         ref = 'TEST'
-        config.load_configuration('testing', 'server2')
+        config.load_configuration('testing')
+        config.load_node_configuration('testing', 'server2')
         result = build.build_package_for_inbound('TpOssAdapterDms', ref)
         self.assertTrue(result, "TpOssAdapterDms.zip not created.")
         # configuration change
         os.environ["CI_PROJECT_DIR"] = 'sprawdzam'
-        config.load_configuration('testing', 'server2')
+        config.load_configuration('testing')
+        config.load_node_configuration('testing', 'server2')
         result = build.build_package_for_inbound('TpOssAdapterDms', ref)
         self.assertTrue(result, "TpOssAdapterDms.zip not created.")
 
