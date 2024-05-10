@@ -1,11 +1,10 @@
 """
 General module to make actions.
-'test' - not implemented, should do some tests by means IntegrationServer and catch developers mistakes;
+'test' - do nothing, should do some tests by means IntegrationServer and catch developers mistakes;
 'deploy' - prepare backup and packages in packages/ directory of IS in environment and run 'is_instance update' script;
 'backup' - not implemented yet, revert changes by use created backup;
 'build' - only prepare packages in 'packages/' directory on IS-es or in inbound if flag is set.
 'stop' - not implemented, stop all instance from environment;
-'test' - only try run main, so there will be invoke imports, and add some else;
 """
 import os
 import pathlib
@@ -50,14 +49,19 @@ def action_build(inbound=False, changes_only=True):
             else:
                 log.error("Built {} failed".format(package))
                 break
-    elif changes_only:
-        # sender.send_to_packages_repo()
+    elif not changes_only:
+        packages = build.get_all_package()
+        build_dir = config.get_build_dir(merge_iid)
+        for package in packages:
+            source_dir = settings.SRC_DIR / pathlib.Path(package)
+            os.symlink(source_dir, build_dir, target_is_directory=True)
+    else:
         pass
 
 
 def action_deploy(inbound=False):
     """
-    Sending packages built in build stage.
+    Sending packages built in build stage and run script is_instance.
     If you have configuration for specific node it MUST have SSH_ADDRESS_ENV_VAR set, cause there have to be correlation
     which config matches to which host.
     Hosts which has different configuration NOT MUST be written down in NODES for environment config,
@@ -82,11 +86,12 @@ def action_deploy(inbound=False):
         for host in hosts:
             log.info("Sending packages to host {}".format(host))
             sender.send_to_inbound(merge_iid, host)
+        # invoke endpoint to install and log.
+        # this probably use only IP's.
     else:
         # sender.send_to_packages_repo()
         # run is_instance on machines from environment
         log.info("not implemented yet.")
-    build.clean_directory_after_deploy(merge_iid)
 
 
 def main():

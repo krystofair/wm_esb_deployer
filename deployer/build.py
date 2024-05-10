@@ -81,8 +81,8 @@ def get_changes_from_git_diff(mock=False):
 
 def get_all_package():
     repo_dir = config.get_env_var_or_default(settings.REPO_DIR_ENV_VAR, default='.')
-    return [p for p in os.scandir(repo_dir / pathlib.Path(settings.SRC_DIR))
-            if is_package(p) and not is_package_to_exclude(p)]
+    return [p.name for p in os.scandir(repo_dir / pathlib.Path(settings.SRC_DIR))
+            if is_package(p.name) and not is_package_to_exclude(p.name)]
 
 
 def extract_is_style_service_name(diff_line: str) -> str:
