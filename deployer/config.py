@@ -84,14 +84,14 @@ def clear_configuration_for_environment(env: str) -> bool:
     return True
 
 
-def find_node_configs(env: str) -> list[pathlib.Path|str]:
+def find_node_configs(env: str) -> list:
     cfg_dir = get_config_dir(env)
     nodes_config_list = [entry.name for entry in os.scandir(cfg_dir)
                          if entry.name.endswith('.cfg') and entry.name != "init.cfg"]
     return nodes_config_list
 
 
-def get_build_dir(ref) -> pathlib.Path|str:
+def get_build_dir(ref) -> str:
     """Create if not exists and return name of build dir. Used setting about where all build dir are."""
     ci_project_dir = get_env_var_or_default("CI_PROJECT_DIR", default=".")
     builds_dir = get_env_var_or_default(settings.BUILD_DIR_ENV_VAR, default=ci_project_dir)
