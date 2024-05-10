@@ -38,7 +38,6 @@ def build_arguments(args=None):
 
 def action_build(inbound=False, changes_only=True):
     merge_iid = os.environ[settings.CI_MERGE_REQUEST_IID]
-    # build.clean_directory_for_new_build()
     if inbound:
         if changes_only:  # experimental
             changes = build.get_changes_from_git_diff(mock=settings.mock)
@@ -57,18 +56,36 @@ def action_build(inbound=False, changes_only=True):
 
 
 def action_deploy(inbound=False):
+    """
+    Sending packages built in build stage.
+    If you have configuration for specific node it MUST have SSH_ADDRESS_ENV_VAR set, cause there have to be correlation
+    which config matches to which host.
+    Hosts which has different configuration NOT MUST be written down in NODES for environment config,
+    but there will be WARNING log.
+    :param inbound:
+    :return:
+    """
     merge_iid = os.environ[settings.CI_MERGE_REQUEST_IID]
     env = os.environ[settings.CI_ENVIRONMENT_NAME]
-    nodes = os.environ[settings.NODES_ENV_VAR].split(',')
+    hosts = os.environ[settings.NODES_ENV_VAR].split(',')
+    nodes_names = config.find_node_configs(env)
     if inbound:
-        for node in nodes:
-            config.load_configuration(env, node)
-            sender.send_to_inbound(merge_iid)
+        for node in nodes_names:
+            log.info("Sending packages for node {}".format(node))
+            config.load_node_configuration(env, node)
+            host = os.environ[settings.SSH_ADDRESS_ENV_VAR]  # changed by last loaded config
+            try:
+                hosts.remove(host)
+            except ValueError:
+                log.warn("Node {} has IP not defined in NODES config for environment {}".format(node, env))
+            sender.send_to_inbound(merge_iid, host)
+        for host in hosts:
+            log.info("Sending packages to host {}".format(host))
+            sender.send_to_inbound(merge_iid, host)
     else:
         # sender.send_to_packages_repo()
         # run is_instance on machines from environment
         log.info("not implemented yet.")
-
     build.clean_directory_after_deploy(merge_iid)
 
 
@@ -76,33 +93,25 @@ def main():
     # parse arguments
     args = build_arguments()
     # configure
-    special_config = config.get_env_var_or_default(settings.NODE_ENV_VAR)
-    commit_ref = os.environ[settings.CI_COMMIT_SHA]
+    ref = ""
     try:
-        if special_config:
-            log.info("Loading configuration with special config for node.")
-            config.load_configuration(os.environ[settings.CI_ENVIRONMENT_NAME], special_config)
-        else:
-            log.info(f"There was no special config for node."
-                     f"Loading only for environment({os.environ[settings.CI_ENVIRONMENT_NAME]}).")
-            config.load_configuration(os.environ[settings.CI_ENVIRONMENT_NAME])
-    except (KeyError, errors.LoadingConfigurationError) as e:
+        ref = os.environ[settings.CI_MERGE_REQUEST_IID]
+        env_name = os.environ[settings.CI_ENVIRONMENT_NAME]
+        log.info("Loading configuration for environment {}".format(env_name))
+        config.load_configuration(env_name)
+    except (ValueError, KeyError, errors.LoadingConfigurationError) as e:
         log.error(e)
         log.info("Error occured. Ending...")
         exit(-1)
+    # run actions
     try:
-        # run specified action
+        if not ref:
+            raise ValueError("Reference to MERGE_REQUEST_IID not set, so pipeline is not configured properly.")
         if args.action == "build":
-            if args.changes_only:
-                pass
-            if args.inbound:  # and args.only_changes - not implemented don't know if this is works. D:
-                packages = set(p[1] for p in [line.split('/') for line in build.get_changes_from_git_diff()] if p[1])
-                for package in packages:
-                    build.build_package_for_inbound(package, commit_ref)
+            changes_only = not args.no_changes_only  # reversed logic
+            action_build(args.inbound, changes_only)
         if args.action == "deploy":
-            action_build(args.package)
-            if not args.inbound:
-                action_deploy(args.package)
+            action_deploy(args.inbound)
         elif args.action == "test":
             exit(0)
         else:

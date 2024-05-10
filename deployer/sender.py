@@ -9,7 +9,7 @@ import pathlib
 import subprocess
 import dataclasses as dc
 
-from . import settings
+from . import settings, config
 from .settings import log
 
 
@@ -78,7 +78,7 @@ class SCPCommand:
         log.info(self)
 
 
-def send_to_inbound(ref: str) -> bool:
+def send_to_inbound(ref: str, host: str) -> bool:
     """
     For now this used `scp` command to send ZIP-s.
     :param: ref Commit from which Directory of current build will be named.
@@ -87,12 +87,12 @@ def send_to_inbound(ref: str) -> bool:
     sent = True
     try:
         dst_dir = os.environ[settings.INBOUND_DIR_ENV_VAR]
-        ssh_host = os.environ[settings.SSH_ADDRESS_ENV_VAR]
+        ssh_host = host
         ssh_port = os.environ[settings.SSH_PORT_ENV_VAR]
         is_username = os.environ[settings.IS_NODE_USERNAME_ENV_VAR]
         is_private_key_filepath = os.environ[settings.IS_NODE_PRIVKEY_ENV_VAR]
         scp = SCPCommand(ssh_host, ssh_port, is_username, pathlib.Path(is_private_key_filepath))
-        src_dir = "build_" / pathlib.Path(ref)
+        src_dir = config.get_build_dir(ref)
         if not scp.send_files(src_dir, dst_dir):
             sent = False
     except KeyError:
