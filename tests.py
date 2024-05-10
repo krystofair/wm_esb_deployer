@@ -110,6 +110,21 @@ class TestMainRun(unittest.TestCase):
         self.assertTrue(opts.no_changes_only)
         self.assertEqual(opts.action, "inbound")
 
+    def test_action_build_linking(self):
+        # configure.
+        self.skipTest("OSError: [WinError 1314] Klient nie ma wymaganych uprawnień: 'packages\\TpOssAdapterDms' -> './build_LINK'")
+        os.environ[settings.CI_MERGE_REQUEST_IID] = 'LINK'
+        main.action_build(False, False)
+        links = [e.name for e in os.scandir("build_LINK") if e.is_symlink()]
+        self.assertIn("TpOssAdapterDms", links)
+
+    def test_action_build_inbound(self):
+        os.environ[settings.CI_PROJECT_DIR] = '.'  # must be because
+        os.environ[settings.CI_MERGE_REQUEST_IID] = 'INBOUND'
+        main.action_build(True, False)
+        zips = [e.name for e in os.scandir("build_INBOUND") if e.is_file() and e.name.endswith('.zip')]
+        self.assertIn("TpOssAdapterDms.zip", zips)
+
 
 class TestBuild(unittest.TestCase):
     def test_extract_svc_name(self):
