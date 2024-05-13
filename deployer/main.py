@@ -24,7 +24,7 @@ def build_arguments(args=None):
                         help="possible options for action are: 'test', 'inbound', 'build', 'deploy', 'backup'"
                              ", 'stop'")
     parser.add_argument('--package', nargs='+', action='extend', help="A list of packages to build archives for.")
-    parser.add_argument('--no-changes-only', action='store_false',
+    parser.add_argument('--no-only-changes', action='store_false',
                         help="Use this flag if you want to deploy all* packages\n*Without excluded packages {}"
                         .format(settings.PACKAGES_TO_EXCLUDE))
     parser.add_argument('--inbound', action='store_true', help="Use it if you want to load package from inbound.")
