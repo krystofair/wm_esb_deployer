@@ -38,8 +38,7 @@ IS_NODE_USERNAME_ENV_VAR = 'IS_NODE_USERNAME'
 IS_NODE_PRIVKEY_ENV_VAR = 'IS_NODE_PRIVKEY'
 IS_INSTANCE_PATH_ENV_VAR = 'IS_INSTANCE_PATH'
 IS_PACKAGE_REPO_PATH_ENV_VAR = 'IS_PACKAGE_REPO_DIR_PATH'
-NODES_ENV_VAR = "NODES_NAMES"  # IPv4 separated by comma (,)
-# how to find special node config name in environment.
+NODES_ENV_VAR = "NODES"  # IPv4 separated by comma (,)
 NODE_ENV_VAR = "NODE_NAME"
 # Environment - set below from gitlab pipeline.
 # Git tag name - set from gitlab pipeline
