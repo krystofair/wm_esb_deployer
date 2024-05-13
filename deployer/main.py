@@ -24,7 +24,7 @@ def build_arguments(args=None):
                         help="possible options for action are: 'test', 'inbound', 'build', 'deploy', 'backup'"
                              ", 'stop'")
     parser.add_argument('--package', nargs='+', action='extend', help="A list of packages to build archives for.")
-    parser.add_argument('--no-only-changes', action='store_false',
+    parser.add_argument('--no-changes-only', action='store_false',
                         help="Use this flag if you want to deploy all* packages\n*Without excluded packages {}"
                         .format(settings.PACKAGES_TO_EXCLUDE))
     parser.add_argument('--inbound', action='store_true', help="Use it if you want to load package from inbound.")
@@ -43,6 +43,11 @@ def action_build(inbound=False, changes_only=True):
             packages = build.get_packages_from_changes(changes)
         else:
             packages = build.get_all_package()
+            try:
+                os.makedirs(config.get_build_dir(merge_iid))
+            except FileExistsError:
+                log.error("Build for this merge request has already done.")
+                exit(-1)
         for package in packages:
             if build.build_package_for_inbound(package, merge_iid):
                 log.info("Built {} successfully".format(package))
