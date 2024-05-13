@@ -23,7 +23,7 @@ def build_package_for_inbound(name: str, ref: str, skip_check_archive_exist=Fals
         # initialize variables
         repository_dir = config.get_env_var_or_default(settings.REPO_DIR_ENV_VAR, default='.')
         build_dir = config.get_build_dir(ref)
-        os.makedirs(build_dir)
+        os.makedirs(build_dir, exist_ok=True)
         if 'zip' in [n for n, _ in shutil.get_archive_formats()]:
             shutil.make_archive(f"{build_dir}/{name}",
                                 'zip', root_dir=f"{repository_dir}/{settings.SRC_DIR}/{name}")
