@@ -129,7 +129,7 @@ def main():
         if args.action == "build":
             if not action_build(args.inbound, args.no_changes_only):
                 exit(-1)
-        if args.action == "deploy":
+        elif args.action == "deploy":
             if not action_deploy(args.inbound):
                 exit(-1)
         elif args.action == "test":
