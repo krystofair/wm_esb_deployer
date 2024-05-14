@@ -46,6 +46,8 @@ def action_build(inbound=False, changes_only=True) -> bool:
     if inbound:
         if changes_only:
             changes = build.get_changes_from_git_diff(mock=settings.mock)
+            if not changes:
+                return False
             packages = build.get_packages_from_changes(changes)
         else:
             packages = build.get_all_package()
@@ -168,7 +170,7 @@ def save_config_from_yaml() -> None:
                 except KeyError:
                     continue
             # save additionally environment name for config
-            cfg.write(f"{[settings.CI_ENVIRONMENT_NAME]} = {os.environ[settings.CI_ENVIRONMENT_NAME]}")
+            cfg.write(f"{settings.CI_ENVIRONMENT_NAME} = {os.environ[settings.CI_ENVIRONMENT_NAME]}")
     except FileExistsError:
         log.info("Configuration already exists. You have to manually clean it up and retry if it changed.")
 
