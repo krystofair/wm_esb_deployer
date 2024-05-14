@@ -74,9 +74,7 @@ def get_changes_from_git_diff(mock=False):
             "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/handleConfigureCFServiceResult/node.ndf"
         ]
     else:
-        target_branch = os.environ[settings.CI_MERGE_REQUEST_TARGET_BRANCH_NAME]
-        source_branch = os.environ[settings.CI_MERGE_REQUEST_SOURCE_BRANCH_NAME]
-        return GitOperation.diff_branches(target_branch, source_branch)
+        return GitOperation.diff_to_HEAD(os.environ[settings.CI_COMMIT_SHA])
 
 
 def get_all_package():
