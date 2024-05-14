@@ -10,16 +10,16 @@ class GitOperation:
     #     """Set up credentials for runner."""
     #     self.login = "esb-runner"
     #     self.access_token = config.get_env_var_or_default(os.environ[settings.PERSONAL_ACCESS_TOKEN], default="")
+
     @staticmethod
-    def diff_branches(target_branch, source_branch) -> list:
+    def diff_to_HEAD(ref: str, **kwargs) -> list:
         """
-        Compare changes between merging branches.
-        :param target_branch: where source will be merged,
-        :param source_branch: with new changes.
+        Compare changes from ref to HEAD.
+        :param ref:
         :return: list of paths whose changed.
         """
         changes = []
-        command_args = 'git diff --name-only {} {}'.format(target_branch, source_branch).split(' ')
+        command_args = 'git diff --name-only {}'.format(ref).split(' ')
         try:
             pc = subprocess.run(command_args, capture_output=True, encoding='utf-8')
             if pc.returncode != 0:
