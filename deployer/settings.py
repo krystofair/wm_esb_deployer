@@ -29,6 +29,8 @@ settings only determine that name in `'` will be search in Environment Variables
 loads configuration. So dont thing that names on the left side of the '=' sign
 is meaningful in `*.cfg` files.
 """
+# name of variable from what create builds directories aka build_$VARIABLE
+PIPELINE_REFERENCE = "CI_MERGE_REQUEST_IID"
 BUILD_DIR_ENV_VAR = 'BUILD_DIR'  # repository where archives are created.
 CONFIG_DIR_ENV_VAR = 'CONFIG_DIR'
 INBOUND_DIR_ENV_VAR = 'INBOUND_DIR'
@@ -51,7 +53,6 @@ CI_COMMIT_SHA = 'CI_COMMIT_SHA'
 CI_COMMIT_TAG = 'CI_COMMIT_TAG'
 CI_PROJECT_NAME = 'CI_PROJECT_NAME'
 CI_PROJECT_DIR = "CI_PROJECT_DIR"  # default folder for builds when no set BUILD_DIR_ENV_VAR
-CI_MERGE_REQUEST_IID = "CI_MERGE_REQUEST_IID"
 CI_MERGE_REQUEST_SOURCE_BRANCH_NAME = "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
 CI_MERGE_REQUEST_TARGET_BRANCH_NAME = "CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
 CI_MERGE_REQUEST_SOURCE_BRANCH_SHA = "CI_MERGE_REQUEST_SOURCE_BRANCH_SHA"  # for create tag for latest version at env.
