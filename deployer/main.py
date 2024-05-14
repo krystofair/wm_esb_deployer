@@ -24,7 +24,7 @@ def build_arguments(args=None):
                         help="possible options for action are: 'test', 'inbound', 'build', 'deploy', 'backup'"
                              ", 'stop'")
     parser.add_argument('--package', nargs='+', action='extend', help="A list of packages to build archives for.")
-    parser.add_argument('--no-changes-only', action='store_false',
+    parser.add_argument('--changes-only', action='store_true',
                         help="Use this flag if you want to deploy all* packages\n*Without excluded packages {}"
                         .format(settings.PACKAGES_TO_EXCLUDE))
     parser.add_argument('--inbound', action='store_true', help="Use it if you want to load package from inbound.")
@@ -118,8 +118,7 @@ def main():
         if not ref:
             raise ValueError("Reference to MERGE_REQUEST_IID not set, so pipeline is not configured properly.")
         if args.action == "build":
-            changes_only = not args.no_changes_only  # reversed logic
-            action_build(args.inbound, changes_only)
+            action_build(args.inbound, args.changes_only)
         if args.action == "deploy":
             action_deploy(args.inbound)
         elif args.action == "test":
