@@ -24,7 +24,7 @@ def build_arguments(args=None):
                         help="possible options for action are: 'test', 'inbound', 'build', 'deploy', 'backup'"
                              ", 'stop'")
     parser.add_argument('--package', nargs='+', action='extend', help="A list of packages to build archives for.")
-    parser.add_argument('--changes-only', action='store_true',
+    parser.add_argument('--no-changes-only', action='store_false',
                         help="Use this flag if you want to deploy all* packages\n*Without excluded packages {}"
                         .format(settings.PACKAGES_TO_EXCLUDE))
     parser.add_argument('--inbound', action='store_true', help="Use it if you want to load package from inbound.")
@@ -35,36 +35,43 @@ def build_arguments(args=None):
     return parser.parse_args(args)
 
 
-def action_build(inbound=False, changes_only=True):
-    merge_iid = os.environ[settings.CI_MERGE_REQUEST_IID]
+def action_build(inbound=False, changes_only=True) -> bool:
+    """
+    Build packages or link to directory build_$settings.PIPELINE_REFERENCE for deploy.
+    :param inbound: flag whether packages should be packed in zip archive,
+    :param changes_only: flag for determine if only packages with changes should be taken into account.
+    :return: True if good, False otherwise.
+    """
+    ref = os.environ[settings.PIPELINE_REFERENCE]
     if inbound:
-        if changes_only:  # experimental
+        if changes_only:
             changes = build.get_changes_from_git_diff(mock=settings.mock)
             packages = build.get_packages_from_changes(changes)
         else:
             packages = build.get_all_package()
             try:
-                os.makedirs(config.get_build_dir(merge_iid))
+                os.makedirs(config.get_build_dir(ref))
             except FileExistsError:
                 log.error("Build for this merge request has already done.")
-                exit(-1)
+                return False
         for package in packages:
-            if build.build_package_for_inbound(package, merge_iid):
+            if build.build_package_for_inbound(package, ref):
                 log.info("Built {} successfully".format(package))
             else:
                 log.error("Built {} failed".format(package))
-                break
+                return False
     elif not changes_only:
         packages = build.get_all_package()
-        build_dir = config.get_build_dir(merge_iid)
+        build_dir = config.get_build_dir(ref)
         for package in packages:
             source_dir = settings.SRC_DIR / pathlib.Path(package)
             os.symlink(source_dir, build_dir, target_is_directory=True)
     else:
-        pass
+        return False  # not implemented.
+    return True
 
 
-def action_deploy(inbound=False):
+def action_deploy(inbound=False) -> bool:
     """
     Sending packages built in build stage and run script is_instance.
     If you have configuration for specific node it MUST have SSH_ADDRESS_ENV_VAR set, cause there have to be correlation
@@ -72,9 +79,9 @@ def action_deploy(inbound=False):
     Hosts which has different configuration NOT MUST be written down in NODES for environment config,
     but there will be WARNING log.
     :param inbound:
-    :return:
+    :return: True if it goes well, False otherwise.
     """
-    merge_iid = os.environ[settings.CI_MERGE_REQUEST_IID]
+    ref = os.environ[settings.PIPELINE_REFERENCE]
     env = os.environ[settings.CI_ENVIRONMENT_NAME]
     hosts = os.environ[settings.NODES_ENV_VAR].split(',')
     nodes_names = config.find_node_configs(env)
@@ -87,16 +94,18 @@ def action_deploy(inbound=False):
                 hosts.remove(host)
             except ValueError:
                 log.warn("Node {} has IP not defined in NODES config for environment {}".format(node, env))
-            sender.send_to_inbound(merge_iid, host)
+            sender.send_to_inbound(ref, host)
         for host in hosts:
             log.info("Sending packages to host {}".format(host))
-            sender.send_to_inbound(merge_iid, host)
+            sender.send_to_inbound(ref, host)
         # invoke endpoint to install and log.
         # this probably use only IP's.
     else:
         # sender.send_to_packages_repo()
         # run is_instance on machines from environment
         log.info("not implemented yet.")
+        return False
+    return True
 
 
 def main():
@@ -105,7 +114,7 @@ def main():
     # configure
     ref = ""
     try:
-        ref = os.environ[settings.CI_MERGE_REQUEST_IID]
+        ref = os.environ[settings.PIPELINE_REFERENCE]
         env_name = os.environ[settings.CI_ENVIRONMENT_NAME]
         log.info("Loading configuration for environment {}".format(env_name))
         config.load_configuration(env_name)
@@ -118,9 +127,11 @@ def main():
         if not ref:
             raise ValueError("Reference to MERGE_REQUEST_IID not set, so pipeline is not configured properly.")
         if args.action == "build":
-            action_build(args.inbound, args.changes_only)
+            if not action_build(args.inbound, args.no_changes_only):
+                exit(-1)
         if args.action == "deploy":
-            action_deploy(args.inbound)
+            if not action_deploy(args.inbound):
+                exit(-1)
         elif args.action == "test":
             exit(0)
         else:
