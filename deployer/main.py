@@ -88,7 +88,8 @@ def action_deploy(inbound=False) -> bool:
     hosts = os.environ[settings.NODES_ENV_VAR].split(',')
     nodes_names = config.find_node_configs(env)
     if inbound:
-        for node in nodes_names:
+        for node_filename in nodes_names:
+            node = node_filename.rstrip('.cfg')
             log.info("Sending packages for node {}".format(node))
             config.load_node_configuration(env, node)
             host = os.environ[settings.SSH_ADDRESS_ENV_VAR]  # changed by last loaded config
