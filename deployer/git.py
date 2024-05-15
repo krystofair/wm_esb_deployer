@@ -32,26 +32,3 @@ class GitOperation:
             log.exception(e)
             raise errors.GitOperationError(e) from None
         return changes
-
-    @staticmethod
-    def check_current_branch():
-        cmd_args = "git branch --show-current".split(' ')
-        result = subprocess.run(cmd_args, capture_output=True, encoding='utf-8')
-        if result.returncode != 0:
-            raise errors.GitOperationError('checkout')
-        return list(filter(None, filter(str.strip, result.stdout.split('\n')))).pop()  # should be one
-
-    @staticmethod
-    def git_checkout(branch) -> bool:
-        cmd_args = "git checkout {}".format(branch).split(' ')
-        result = subprocess.run(cmd_args)
-        if result.returncode != 0:
-            raise errors.GitOperationError('checkout')
-        return True
-
-    def pull_changes(self, branch):
-        if self.check_current_branch() != branch:
-            self.git_checkout(branch)
-        cmd_args = "git pull".split(' ')
-        if subprocess.run(cmd_args).returncode != 0:
-            raise errors.GitOperationError('pull')

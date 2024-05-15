@@ -33,6 +33,7 @@ is meaningful in `*.cfg` files.
 PIPELINE_REFERENCE = "CI_MERGE_REQUEST_IID"
 BUILD_DIR_ENV_VAR = 'BUILD_DIR'  # repository where archives are created.
 CONFIG_DIR_ENV_VAR = 'CONFIG_DIR'
+# variables to use in configuration of environments
 INBOUND_DIR_ENV_VAR = 'INBOUND_DIR'
 SSH_ADDRESS_ENV_VAR = 'SSH_ADDRESS'
 SSH_PORT_ENV_VAR = 'SSH_PORT'
@@ -40,7 +41,7 @@ IS_NODE_USERNAME_ENV_VAR = 'IS_NODE_USERNAME'
 IS_NODE_PRIVKEY_ENV_VAR = 'IS_NODE_PRIVKEY'
 IS_INSTANCE_PATH_ENV_VAR = 'IS_INSTANCE_PATH'
 IS_PACKAGE_REPO_PATH_ENV_VAR = 'IS_PACKAGE_REPO_DIR_PATH'
-NODES_ENV_VAR = "NODES"  # IPv4 separated by comma (,)
+NODES_ENV_VAR = "NODES"  # IPv4 separated by comma (,) - hosts where to send files
 NODE_ENV_VAR = "NODE_NAME"
 # Environment - set below from gitlab pipeline.
 # Git tag name - set from gitlab pipeline

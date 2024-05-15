@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 
 authors = [
-    {name='Krzysztof Kłapyta', email='krzysztof.klapyta@comarch.com'}
+    {name='Krzysztof Kłapyta', email='krystofer02@gmail.com'}
 ]
 
 name = 'esbdeployer'
-version = '0.2.0'
+version = '1.0.0'
 
 [project.scripts]
 deployer = "deployer.main:main"
@@ -20,3 +20,10 @@ clean_configuration_per_environment = "deployer.main:clean_configuration"
 packages = [
     "deployer"
 ]
+
+[project.optional-dependencies]
+# to run tests.py
+test = ["pytest"]
+# to generate docs
+# TODO: prepare docs for sphinx docs generator
+docs = ["sphinx"]

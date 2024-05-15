@@ -1,3 +1,5 @@
+"""Building - preparing changes to deploy"""
+
 import functools
 import shutil
 import pathlib
@@ -5,7 +7,7 @@ import os
 import itertools
 from datetime import datetime
 
-from . import errors, settings, config
+from . import settings, config
 from .settings import log
 from .git import GitOperation
 
@@ -45,7 +47,13 @@ def build_package_for_inbound(name: str, ref: str, skip_check_archive_exist=Fals
 
 
 @functools.cache
-def is_package_to_exclude(package_name):
+def is_package_to_exclude(package_name) -> bool:
+    """
+    Determine whether package_name should be skipped or not.
+    Implementation of logic with asterisk (*) to exclude by 'starts with' pattern.
+    :param package_name: name to check.
+    :return: True if should, False otherwise.
+    """
     for exclude in settings.PACKAGES_TO_EXCLUDE:
         if exclude.endswith('*') and exclude[:-1] in package_name:
             return True
@@ -56,12 +64,22 @@ def is_package_to_exclude(package_name):
 
 @functools.cache
 def is_package(p: str) -> bool:
+    """
+    Determine whether package name p is package in our understanding.
+    :param p: package name to check
+    :return: True if it is a packages name, False otherwise.
+    """
     if p.startswith("TpOss") or p.startswith("CaOss") or p.startswith("Wm") or p.startswith("Default"):
         return True
     return False
 
 
 def get_changes_from_git_diff(mock=False):
+    """
+    Returns list of paths which changed between merge_request source branch and target branch.
+    Mocked list shows an example of data which are returned here.
+    Flag 'mock' default to False, can be set in settings.py - it was used for testing.
+    """
     if mock:
         return [
             "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processHandleConfigureCFServiceResultRequest/flow.xml",
@@ -77,27 +95,49 @@ def get_changes_from_git_diff(mock=False):
         return GitOperation.diff_to_target_branch(os.environ[settings.CI_MERGE_REQUEST_TARGET_BRANCH_NAME])
 
 
-def get_all_package():
+def get_all_package() -> list:
+    """
+    Collecting all packages from repository directory, which is default '.' and can be set in settings.
+    Default '.' is where GitLab runner cloned repository, but this can be specified in GitLab settings too,
+    so if you change that value you should change REPO_DIR variable for this deployer too.
+    :return: list of package names.
+    """
     repo_dir = config.get_env_var_or_default(settings.REPO_DIR_ENV_VAR, default='.')
     return [p.name for p in os.scandir(repo_dir / pathlib.Path(settings.SRC_DIR))
             if is_package(p.name) and not is_package_to_exclude(p.name)]
 
 
-def extract_is_style_service_name(diff_line: str) -> str:
+def extract_is_style_service_name(diff_line: str, first_parts=None) -> str:
+    """
+    From diff line of changes from git this function produce name for service in Java style.
+    Like this: PackageName/ns/com/example/service => com.example:service.
+    :param diff_line: line for split and change
+    :param first_parts: parts to search as begin, default None like ['tp'].
+    :return: changed name or empty string if cant process line.
+    """
     try:
+        if not first_parts:
+            first_parts = ['tp']
         parts = diff_line.split('/')
         _ = parts.pop()
-        index = parts.index('tp')
+        index = None
+        for first_part in first_parts:
+            try:
+                index = parts.index(first_part)
+            except ValueError:
+                pass
+        if index is None:
+            raise ValueError()
         return '.'.join(parts[index:-1]) + ':' + parts[-1]
     except ValueError:
         log.warn(f"This line {diff_line} cannot be parsed as a service name.")
-        return ""
     except Exception as e:
         log.exception(e)
-        return ""
+    return ""
 
 
 def add_file_cicd_version_to_path(path):
+    """Add to `path` cicd version in format {project_name};{commit_sha};{dt_stamp}"""
     project_name = os.environ[settings.CI_PROJECT_NAME] if settings.CI_PROJECT_NAME in os.environ else '-'
     commit_sha = os.environ[settings.CI_COMMIT_SHA] if settings.CI_COMMIT_SHA in os.environ else '-'
     tag_name = os.environ[settings.CI_COMMIT_TAG] if settings.CI_COMMIT_TAG in os.environ else '-'
@@ -134,12 +174,10 @@ def get_services_from_changes(changes) -> set:
     return services
 
 
-def clean_directory_after_deploy(ref, directory='.'):
-    """
-    Delete build_{ref} directory whose were created by deployer.
-    :param directory: directory where to search that build_{ref}.
-    :param ref: reference to merge_iid
-    """
+def clean_directory_after_deploy(ref):
+    """Delete build_{settings.PIPELINE_REFERENCE} directory which was created by deployer."""
+    ref = settings.PIPELINE_REFERENCE
+    directory = config.get_build_dir(ref)
     for entry in os.scandir(directory):
-        if entry.is_dir() and entry.name == ref:
+        if entry.is_dir() and entry.name == f"build_{ref}":
             shutil.rmtree(entry.path)
