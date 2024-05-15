@@ -1,3 +1,7 @@
+"""
+Module for manipulation of configuration settings like from some properties build concrete path
+for, for example config directory or build directory.
+"""
 import pathlib
 import os
 import functools
@@ -7,6 +11,10 @@ from .settings import log
 
 
 def get_env_var_or_default(name, default=None):
+    """
+    Get variable from shell environment or if not exists return default value.
+    This if for variables whom are not required, and should not raise exception KeyError.
+    """
     try:
         return os.environ[name]
     except KeyError:
@@ -16,7 +24,7 @@ def get_env_var_or_default(name, default=None):
 @functools.lru_cache(maxsize=1)
 def get_config_dir(env: str) -> pathlib.Path:
     """
-    Get config directory for environment name (in upper case) and root folder gets from CONFIG_DIR
+    Get config directory for environment name and root folder gets from CONFIG_DIR
     environment variable.
     """
     # this log should appear only once, because this is cached by environment name
@@ -32,6 +40,13 @@ def get_config_dir(env: str) -> pathlib.Path:
 
 
 def load_config(env: str, node: str) -> None:
+    """
+    Load key=values from config to shell environment, so it will be accessible to others.
+    Treat line started with '#' as comment line.
+    :param env: configuration will be search in config_dir for that environment.
+    :param node: name of file (node + ".cfg") to search config or "init.cfg" for general.
+    :return: None, throws exception `errors.LoadingConfigurationError` if something goes wrong.
+    """
     try:
         config = get_config_dir(env) / pathlib.Path(node + '.cfg')
         with open(config, 'r') as cfg:
@@ -48,8 +63,8 @@ def load_config(env: str, node: str) -> None:
 def load_configuration(env: str) -> bool:
     """
     Loading configuration of environment as Public API function.
-    :param env: environment for which configuration will be searched
-    :return: True if loaded, False otherwise
+    :param env: environment for which configuration will be searched.
+    :return: True if loaded, False otherwise.
     """
     try:
         load_config(env, 'init')
@@ -60,6 +75,11 @@ def load_configuration(env: str) -> bool:
 
 
 def load_node_configuration(env: str, node: str) -> bool:
+    """
+    Loading configuration of environment as Public API function.
+    :param env: environment for which configuration will be searched
+    :return: True if there is no problem, False otherwise.
+    """
     try:
         if node:
             load_config(env, node)
@@ -73,7 +93,7 @@ def clear_configuration_for_environment(env: str) -> bool:
     """
     Delete whole folder of environment from $CONFIG_DIR.
     :param env: environment name defined in Gitlab JOB.
-    :return: None
+    :return: True if clearing goes well, False otherwise.
     """
     try:
         config_dir = get_env_var_or_default(settings.CONFIG_DIR_ENV_VAR, default='configs.d')
@@ -85,6 +105,11 @@ def clear_configuration_for_environment(env: str) -> bool:
 
 
 def find_node_configs(env: str) -> list:
+    """
+    Search configuration files for nodes, that is get all '.cfg' but not 'init.cfg'.
+    :param env: in which environment to search.
+    :return: list of file names.
+    """
     cfg_dir = get_config_dir(env)
     nodes_config_list = [entry.name for entry in os.scandir(cfg_dir)
                          if entry.name.endswith('.cfg') and entry.name != "init.cfg"]

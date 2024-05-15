@@ -209,10 +209,8 @@ class TestSender(unittest.TestCase):
 
     def test_sending_to_remote_directory(self):
         self.skipTest("Take me too long time when trying with key authentication in Windows."
-                      "Probably Linux will operate normally with that.")
+                      "Probably Linux will operate normally with that.") # in gitlab-runner sending works!
         os.environ[settings.INBOUND_DIR_ENV_VAR] = "/home/admin/packages"
-        self.assertTrue(sender.send_to_inbound("TEST"))
+        self.assertTrue(sender.send_to_inbound("TEST", "192.168.56.109"))
         os.environ[settings.INBOUND_DIR_ENV_VAR] = ""
-        self.assertTrue(sender.send_to_inbound("TEST"))
-
-
+        self.assertTrue(sender.send_to_inbound("TEST", "192.168.56.109"))

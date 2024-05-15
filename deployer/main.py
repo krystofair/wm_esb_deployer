@@ -17,6 +17,11 @@ from .settings import log
 
 
 def build_arguments(args=None):
+    """
+    Parse arguments from command line.
+    :param args: None, prepared to do tests.
+    :return:
+    """
     if args is None:
         args = sys.argv[1:]
     parser = argparse.ArgumentParser()

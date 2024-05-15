@@ -8,8 +8,6 @@ import os
 import pathlib
 import subprocess
 import dataclasses as dc
-import operator
-from functools import partial
 
 from . import settings, config
 from .settings import log
