@@ -54,6 +54,7 @@ CI_COMMIT_TAG = 'CI_COMMIT_TAG'
 CI_PROJECT_NAME = 'CI_PROJECT_NAME'
 CI_PROJECT_DIR = "CI_PROJECT_DIR"  # default folder for builds when no set BUILD_DIR_ENV_VAR
 CI_MERGE_REQUEST_SOURCE_BRANCH_SHA = "CI_MERGE_REQUEST_SOURCE_BRANCH_SHA"  # for create tag for latest version at env.
+CI_MERGE_REQUEST_TARGET_BRANCH_NAME = "CI_MERGE_REQUEST_TARGET_BRANCH_NAME"  # for git diff.
 
 # where to find sources
 SRC_DIR = 'packages'  # directory which contains a code, like /src/ in Java

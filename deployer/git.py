@@ -12,14 +12,14 @@ class GitOperation:
     #     self.access_token = config.get_env_var_or_default(os.environ[settings.PERSONAL_ACCESS_TOKEN], default="")
 
     @staticmethod
-    def diff_to_HEAD(ref: str, **kwargs) -> list:
+    def diff_to_target_branch(target_branch_name) -> list:
         """
-        Compare changes from ref to HEAD.
-        :param ref:
+        Compare changes between merging branches - new (detached commit) and target.
+        :param target_branch_name: where source will be merged,
         :return: list of paths whose changed.
         """
         changes = []
-        command_args = 'git diff --name-only {}'.format(ref).split(' ')
+        command_args = 'git diff --name-only remotes/origin/{}'.format(target_branch_name).split(' ')
         try:
             pc = subprocess.run(command_args, capture_output=True, encoding='utf-8')
             if pc.returncode != 0:
