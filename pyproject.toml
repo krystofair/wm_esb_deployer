@@ -8,7 +8,7 @@ authors = [
     {name='Krzysztof Kłapyta', email='krzysztof.klapyta@comarch.com'}
 ]
 name = 'esbdeployer'
-version = '0.1.5'
+version = '0.1.6'
 
 [project.scripts]
 deployer = "deployer.main:main"
