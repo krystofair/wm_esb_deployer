@@ -8,6 +8,8 @@ import os
 import pathlib
 import subprocess
 import dataclasses as dc
+import operator
+from functools import partial
 
 from . import settings, config
 from .settings import log
@@ -27,7 +29,8 @@ class SCPCommand:
         :param to_dir: absolute path for remote directory or relative from authorized user.
         :return: True if all good, False otherwise.
         """
-        args = f"scp -i {self.private_key_filename} -P {self.port} {from_dir}/* {self.username}@{self.ip}:{to_dir}/"
+        str_files = ' '.join([e.path for e in os.scandir(from_dir) if e.is_file()])
+        args = f"scp -p -i {self.private_key_filename} -P {self.port} {str_files} {self.username}@{self.ip}:{to_dir}/"
         command_args = args.split(' ')
         sent = True
         try:
@@ -53,7 +56,7 @@ class SCPCommand:
         :param to_dir: when that folder should be placed.
         :return: True if sent, False otherwise.
         """
-        args = f"scp -i {self.private_key_filename} -P {self.port} {name} {self.username}@{self.ip}:{to_dir}/"
+        args = f"scp -p -i {self.private_key_filename} -P {self.port} -r {name} {self.username}@{self.ip}:{to_dir}/"
         command_args = args.split(' ')
         sent = True
         try:
