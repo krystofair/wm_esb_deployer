@@ -97,10 +97,14 @@ def action_deploy(inbound=False) -> bool:
                 hosts.remove(host)
             except ValueError:
                 log.warn("Node {} has IP not defined in NODES config for environment {}".format(node, env))
-            sender.send_to_inbound(ref, host)
+            if not sender.send_to_inbound(ref, host):
+                log.error(f"Sending packages to {host} ({node}) to inbound for environment {env} failed.")
+                return False
         for host in hosts:
             log.info("Sending packages to host {}".format(host))
-            sender.send_to_inbound(ref, host)
+            if not sender.send_to_inbound(ref, host):
+                log.error(f"Sending packages for host {host} to inbound for environment {env} failed")
+                return False
         # invoke endpoint to install and log.
         # this probably use only IP's.
     else:
