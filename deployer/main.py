@@ -182,7 +182,8 @@ def save_config_from_yaml() -> None:
             # save additionally environment name for config
             cfg.write(f"{settings.CI_ENVIRONMENT_NAME} = {os.environ[settings.CI_ENVIRONMENT_NAME]}")
     except FileExistsError:
-        log.info("Configuration already exists. You have to manually clean it up and retry if it changed.")
+        log.error("Configuration already exists. You have to manually clean it up and retry if it changed.")
+        exit(-1)
 
 
 def clean_configuration() -> None:
