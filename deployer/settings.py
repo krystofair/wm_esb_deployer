@@ -31,6 +31,7 @@ is meaningful in `*.cfg` files.
 """
 # name of variable from what create builds directories aka build_$VARIABLE
 PIPELINE_REFERENCE = "CI_MERGE_REQUEST_IID"
+ZONE = "ZONE"  # support for zones.
 BUILD_DIR_ENV_VAR = 'BUILD_DIR'  # repository where archives are created.
 CONFIG_DIR_ENV_VAR = 'CONFIG_DIR'
 # variables to use in configuration of environments
@@ -42,7 +43,6 @@ IS_NODE_PRIVKEY_ENV_VAR = 'IS_NODE_PRIVKEY'
 IS_INSTANCE_PATH_ENV_VAR = 'IS_INSTANCE_PATH'
 IS_PACKAGE_REPO_PATH_ENV_VAR = 'IS_PACKAGE_REPO_DIR_PATH'
 NODES_ENV_VAR = "NODES"  # IPv4 separated by comma (,) - hosts where to send files
-NODE_ENV_VAR = "NODE_NAME"
 # Environment - set below from gitlab pipeline.
 # Git tag name - set from gitlab pipeline
 # gitlab_user? - needed?

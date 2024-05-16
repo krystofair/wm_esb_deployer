@@ -90,8 +90,10 @@ def action_deploy(inbound=False) -> bool:
     """
     ref = os.environ[settings.PIPELINE_REFERENCE]
     env = os.environ[settings.CI_ENVIRONMENT_NAME]
-    hosts = os.environ[settings.NODES_ENV_VAR].split(',')
     nodes_names = config.find_node_configs(env)
+    nodes_in_zone = config.get_env_var_or_default(settings.ZONE, default=None)
+    hosts_from_NODES_var = os.environ[settings.NODES_ENV_VAR].split(',')
+    hosts = nodes_in_zone.split(',') if nodes_in_zone else hosts_from_NODES_var
     if inbound:
         for node_filename in nodes_names:
             node = node_filename.rstrip('.cfg')
