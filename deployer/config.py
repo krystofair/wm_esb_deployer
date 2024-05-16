@@ -5,6 +5,7 @@ for, for example config directory or build directory.
 import pathlib
 import os
 import functools
+import shutil
 
 from . import errors, settings
 from .settings import log
@@ -97,7 +98,7 @@ def clear_configuration_for_environment(env: str) -> bool:
     """
     try:
         config_dir = get_env_var_or_default(settings.CONFIG_DIR_ENV_VAR, default='configs.d')
-        os.remove(pathlib.Path(config_dir) / env)
+        shutil.rmtree(pathlib.Path(config_dir) / env)
     except Exception as e:
         log.error(e)
         return False
