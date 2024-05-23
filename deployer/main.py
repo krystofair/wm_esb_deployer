@@ -90,48 +90,42 @@ def action_deploy(inbound=False) -> bool:
     """
     ref = os.environ[settings.PIPELINE_REFERENCE]
     env = os.environ[settings.CI_ENVIRONMENT_NAME]
-    global_config = copy.deepcopy(os.environ)
-    node_configs = list()
     try:
         deploy_zone = config.get_env_var_or_default(settings.ZONE_ENV_VAR, default=None)
         if deploy_zone:
             del os.environ[settings.ZONE_ENV_VAR]
+        hosts = set()
+        configured_hosts = {}
         filenames_node_cfg = config.find_node_configs(env)
+        log.info("Selecting hosts - zones logic")
         for nf in filenames_node_cfg:
             node_name = nf.rstrip('.cfg')
-            log.info("Load configuration for node {}".format(node_name))
             config.load_node_configuration(env, node_name)
-            zone = config.get_env_var_or_default(settings.ZONE_ENV_VAR, default='kokianowy_rbaon_astoarnuta')
-            os.environ[settings.ZONE_ENV_VAR] = zone
-            node_configs.append(copy.deepcopy(os.environ))
+            addr = os.environ[settings.SSH_ADDRESS_ENV_VAR]
+            if deploy_zone:
+                zone = config.get_env_var_or_default(settings.ZONE_ENV_VAR,
+                                                     default='kokianowy_rbaon_astoarnuta')
+                if zone == deploy_zone:
+                    hosts.add(addr)
+            if addr in configured_hosts:
+                raise errors.LoadingConfigurationError("The same address for two nodes")
+            configured_hosts[addr] = node_name
+        if not deploy_zone:
+            hosts = set(os.environ[settings.NODES_ENV_VAR].split(','))
+            hosts |= configured_host.keys()
     except KeyError as e:
         log.error(e)
         return False
     except errors.LoadingConfigurationError as e:
         log.error(e)
         return False
-    configured_hosts = map(lambda x: x[settings.SSH_ADDRESS_ENV_VAR], node_configs)
-    if not deploy_zone:  # not specified zone
-        hosts = set(os.environ[settings.NODES_ENV_VAR].split(','))
-        _ = [hosts.add(ch) for ch in configured_hosts]  # add configured hosts even there are not included in NODES var
-    else:
-        hosts = set()
-        for cfg in node_configs:
-            addr = cfg[settings.SSH_ADDRESS_ENV_VAR]
-            zone = cfg[settings.ZONE_ENV_VAR]
-            if zone == deploy_zone:
-                hosts.add(addr)
-    log.info("sending part...")
     for host in hosts:
-        os.environ = global_config
         try:
-            os.environ.update([cfg for cfg in node_configs if cfg[settings.SSH_ADDRESS_ENV_VAR] == host][0])
-        except IndexError:
-            if deploy_zone:
-                log.error("Not load SSH_ADDRESS for host {}".format(host))
-                return False
-            else:
-                pass
+            log.info("Loading configuration for configured host {}".format(host))
+            config.load_node_configuration(env, configured_hosts[host])
+        except KeyError:
+            # supress this cause this means that host are loaded from spliting by comma
+            pass
         if inbound:
             log.info("Sending packages to inbound at host {}".format(host))
             if not sender.send_to_inbound(ref, host):
@@ -161,7 +155,8 @@ def main():
     # run actions
     try:
         if not ref:
-            raise ValueError("Reference to MERGE_REQUEST_IID not set, so pipeline is not configured properly.")
+            raise ValueError("Reference to MERGE_REQUEST_IID not set,"
+                             "so pipeline is not configured properly.")
         if args.action == "build":
             if not action_build(args.inbound, args.no_changes_only):
                 exit(-1)
