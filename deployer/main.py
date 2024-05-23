@@ -100,12 +100,13 @@ def action_deploy(inbound=False) -> bool:
             name = nf.rstrip('.cfg')
             log.info("Load configuration for node {}".format(name))
             config.load_node_configuration(env, name)
-            if not nodes_info[name][settings.ZONE_ENV_VAR]:
-                nodes_info[name][settings.ZONE_ENV_VAR] = 'kokianowy_rbaon_astoarnuta'  # other default value than None
+            node_cfg = config.collect_last_loaded_config_to_dict()
+            if not node_cfg[settings.ZONE_ENV_VAR]:
+                node_cfg[settings.ZONE_ENV_VAR] = 'kokianowy_rbaon_astoarnuta'  # other default value than None
             used_addresses = map(lambda x: x[settings.SSH_ADDRESS_ENV_VAR], nodes_info.values())
-            if nodes_info[name][settings.SSH_ADDRESS_ENV_VAR] in used_addresses:
+            if node_cfg[settings.SSH_ADDRESS_ENV_VAR] in used_addresses:
                 raise errors.LoadingConfigurationError("IP address was used twice for different nodes")
-            nodes_info.update({name: config.collect_last_loaded_config_to_dict()})
+            nodes_info.update({name: node_cfg})
     except KeyError as e:
         log.error(e)
         return False
@@ -117,7 +118,8 @@ def action_deploy(inbound=False) -> bool:
         hosts = set(os.environ[settings.NODES_ENV_VAR].split(','))
         _ = [hosts.add(ch) for ch in configured_hosts]  # add configured hosts even there are not included in NODES var
     else:
-        hosts = set([addr for addr, zone in nodes_info.values() if zone == deploy_zone])
+        hosts = set([x[settings.SSH_ADDRESS_ENV_VAR] for x in nodes_info.values()
+                     if x[settings.SSH_ADDRESS_ENV_VAR] and x[settings.ZONE_ENV_VAR] == deploy_zone])
     log.info("sending part...")
     for host in hosts:
         if inbound:
