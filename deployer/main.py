@@ -10,7 +10,6 @@ import os
 import pathlib
 import sys
 import argparse
-import inspect
 
 from . import (config, errors, sender, settings, build)
 from .settings import log
@@ -101,19 +100,19 @@ def action_deploy(inbound=False) -> bool:
             name = nf.rstrip('.cfg')
             log.info("Load configuration for node {}".format(name))
             config.load_node_configuration(env, name)
-            nzone = config.get_env_var_or_default(settings.ZONE_ENV_VAR, default='kokianowy_rbaon_astoarnuta')
-            nhost = os.environ[settings.SSH_ADDRESS_ENV_VAR]
-            used_addresses = [addr for addr, zone in nodes_info.values()]
-            if nhost in used_addresses:
+            if not nodes_info[name][settings.ZONE_ENV_VAR]:
+                nodes_info[name][settings.ZONE_ENV_VAR] = 'kokianowy_rbaon_astoarnuta'  # other default value than None
+            used_addresses = map(lambda x: x[settings.SSH_ADDRESS_ENV_VAR], nodes_info.values())
+            if nodes_info[name][settings.SSH_ADDRESS_ENV_VAR] in used_addresses:
                 raise errors.LoadingConfigurationError("IP address was used twice for different nodes")
-            nodes_info.update({name: (nhost, nzone)})
+            nodes_info.update({name: config.collect_last_loaded_config_to_dict()})
     except KeyError as e:
         log.error(e)
         return False
     except errors.LoadingConfigurationError as e:
         log.error(e)
         return False
-    configured_hosts = [addr for addr, zone in nodes_info.values()]
+    configured_hosts = map(lambda x: x[settings.SSH_ADDRESS_ENV_VAR], nodes_info.values())
     if not deploy_zone:  # not specified zone
         hosts = set(os.environ[settings.NODES_ENV_VAR].split(','))
         _ = [hosts.add(ch) for ch in configured_hosts]  # add configured hosts even there are not included in NODES var
@@ -180,20 +179,17 @@ def save_config_from_yaml() -> None:
     args = parser.parse_args(sys.argv[1:])
     filename = args.filename
     env_name = os.environ[settings.CI_ENVIRONMENT_NAME]
-    members = [member for member in inspect.getmembers(settings)
-               if member[0].endswith('ENV_VAR') and 'CONFIG_DIR' not in member[0]]
+    keys = [key for name, key in config.get_list_env_var_from_settings() if 'CONFIG_DIR' not in name]
     config_dir = config.get_env_var_or_default(settings.CONFIG_DIR_ENV_VAR, default='configs.d')
     path = config_dir / pathlib.Path(env_name)
     os.makedirs(path, exist_ok=True)
     try:
         with open(path / filename, 'x', encoding='utf-8') as cfg:
-            for _, key in members:
+            for key in keys:
                 try:
                     cfg.write(f"{key} = {os.environ[key]}\n")
                 except KeyError:
                     continue
-            # save additionally environment name for config
-            cfg.write(f"{settings.CI_ENVIRONMENT_NAME} = {os.environ[settings.CI_ENVIRONMENT_NAME]}")
     except FileExistsError:
         log.error("Configuration already exists. You have to manually clean it up and retry if it changed.")
         exit(-1)

@@ -6,6 +6,7 @@ import pathlib
 import os
 import functools
 import shutil
+import inspect
 
 from . import errors, settings
 from .settings import log
@@ -124,3 +125,25 @@ def get_build_dir(ref) -> str:
     build_dir = "{}/build_{}".format(builds_dir, ref)
     os.makedirs(builds_dir, exist_ok=True)
     return build_dir
+
+
+def get_list_env_var_from_settings() -> list:
+    """
+    Listing members of environment variables,
+    whose names are in settings like *_ENV_VAR.
+    :return: list of (name, value) tuple of variables.
+    """
+    return [member for member in inspect.getmembers(settings) if member[0].endswith('_ENV_VAR')]
+
+
+def collect_last_loaded_config_to_dict() -> dict:
+    """
+    Collect configuration from local environment, for be accessible further for python code.
+    Treat all variables as optional.
+    :return: dict of name -> value, but as values for variables from settings.
+    """
+    configuration = {}
+    keys = (k for n, k in get_list_env_var_from_settings())
+    for key in keys:
+        configuration[key] = get_env_var_or_default(key, default=None)
+    return configuration
