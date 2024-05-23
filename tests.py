@@ -47,7 +47,7 @@ class LoadingConfigurationTest(unittest.TestCase):
         result = config.load_node_configuration('test', 'server2')
         self.assertTrue(result)
         self.assertEqual(os.environ['HOST'], '192.168.56.100')
-        self.assertEqual(os.environ['USERNAME'], 'krzysztof3')
+        self.assertEqual(os.environ['USERNAME'], 'krzysztof2')
 
     def test_errors_from_loading_configuration(self):
         os.remove('./config.d/prod/init.cfg')
