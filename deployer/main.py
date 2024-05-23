@@ -91,9 +91,9 @@ def action_deploy(inbound=False) -> bool:
     ref = os.environ[settings.PIPELINE_REFERENCE]
     env = os.environ[settings.CI_ENVIRONMENT_NAME]
     node_names = config.find_node_configs(env)
-    deploy_zone = config.get_env_var_or_default(settings.ZONE, default=None)
+    deploy_zone = config.get_env_var_or_default(settings.ZONE_ENV_VAR, default=None)
     if deploy_zone:
-        del os.environ[settings.ZONE]
+        del os.environ[settings.ZONE_ENV_VAR]
     # collect info about nodes
     nodes_info = {}
     try:
@@ -101,7 +101,7 @@ def action_deploy(inbound=False) -> bool:
             name = nf.rstrip('.cfg')
             log.info("Load configuration for node {}".format(name))
             config.load_node_configuration(env, name)
-            nzone = config.get_env_var_or_default(os.environ[settings.ZONE], default='kokianowy_rbaon_astoarnuta')
+            nzone = config.get_env_var_or_default(os.environ[settings.ZONE_ENV_VAR], default='kokianowy_rbaon_astoarnuta')
             nhost = os.environ[settings.SSH_ADDRESS_ENV_VAR]
             used_addresses = [addr for addr, zone in nodes_info.values()]
             if nhost in used_addresses:
