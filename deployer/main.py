@@ -90,36 +90,47 @@ def action_deploy(inbound=False) -> bool:
     """
     ref = os.environ[settings.PIPELINE_REFERENCE]
     env = os.environ[settings.CI_ENVIRONMENT_NAME]
-    nodes_names = config.find_node_configs(env)
-    nodes_in_zone = config.get_env_var_or_default(settings.ZONE, default=None)
-    hosts_from_NODES_var = os.environ[settings.NODES_ENV_VAR].split(',')
-    hosts = nodes_in_zone.split(',') if nodes_in_zone else hosts_from_NODES_var
-    if inbound:
-        for node_filename in nodes_names:
-            node = node_filename.rstrip('.cfg')
-            log.info("Sending packages for node {}".format(node))
-            config.load_node_configuration(env, node)
-            host = os.environ[settings.SSH_ADDRESS_ENV_VAR]  # changed by last loaded config
-            try:
-                hosts.remove(host)
-            except ValueError:
-                log.warn("Node {} has IP not defined in NODES config for environment {}".format(node, env))
-            if not sender.send_to_inbound(ref, host):
-                log.error(f"Sending packages to {host} ({node}) to inbound for environment {env} failed.")
-                return False
-        for host in hosts:
-            log.info("Sending packages to host {}".format(host))
+    node_names = config.find_node_configs(env)
+    deploy_zone = config.get_env_var_or_default(settings.ZONE, default=None)
+    if deploy_zone:
+        del os.environ[settings.ZONE]
+    # collect info about nodes
+    nodes_info = {}
+    try:
+        for nf in node_names:
+            name = nf.rstrip('.cfg')
+            log.info("Load configuration for node {}".format(name))
+            config.load_node_configuration(env, name)
+            nzone = config.get_env_var_or_default(os.environ[settings.ZONE], default='kokianowy_rbaon_astoarnuta')
+            nhost = os.environ[settings.SSH_ADDRESS_ENV_VAR]
+            used_addresses = [addr for addr, zone in nodes_info.values()]
+            if nhost in used_addresses:
+                raise errors.LoadingConfigurationError("IP address was used twice for different nodes")
+            nodes_info.update({name: (nhost, nzone)})
+    except KeyError as e:
+        log.error(e)
+        return False
+    except errors.LoadingConfigurationError as e:
+        log.error(e)
+        return False
+    configured_hosts = [addr for addr, zone in nodes_info.values()]
+    if not deploy_zone:  # not specified zone
+        hosts = set(os.environ[settings.NODES_ENV_VAR].split(','))
+        _ = [hosts.add(ch) for ch in configured_hosts]  # add configured hosts even there are not included in NODES var
+    else:
+        hosts = set([addr for addr, zone in nodes_info.values() if zone == deploy_zone])
+    log.info("sending part...")
+    for host in hosts:
+        if inbound:
+            log.info("Sending packages to inbound at host {}".format(host))
             if not sender.send_to_inbound(ref, host):
                 log.error(f"Sending packages for host {host} to inbound for environment {env} failed")
                 return False
-        # invoke endpoint to install and log.
-        # this probably use only IP's.
-    else:
-        # sender.send_to_packages_repo()
-        # run is_instance on machines from environment
-        log.info("not implemented yet.")
-        return False
-    return True
+        else:
+            log.info("Sending packages to repository dir at host {}".format(host))
+            if not sender.send_to_packages_repo(ref, host):
+                log.error(f"Sending packages for host {host} to repository dir for environment {env} failed")
+                return False
 
 
 def main():
@@ -150,7 +161,7 @@ def main():
             exit(0)
         else:
             log.error("Entered unknown action.")
-    except errors.GitOperationError as e:
+    except Exception as e:
         log.error(e)
         log.info("Error occured. Ending...")
         exit(-1)

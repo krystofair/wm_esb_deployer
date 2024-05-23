@@ -78,6 +78,18 @@ class SCPCommand:
         log.error(pc.stderr)
         log.info(self)
 
+    def send_dirs(self, from_dir, src_dir) -> bool:
+        """
+        Wrapper for send_dir, to do it multiple, send_files analogy.
+        :param from_dir: where dirs are located
+        :param src_dir: where to dirs will be located.
+        :return: False if some dir does not send.
+        """
+        for dir_name in [e.path for e in os.scandir(from_dir) if e.is_dir()]:
+            if not self.send_dir(dir_name, src_dir):
+                return False
+        return True
+
 
 def send_to_inbound(ref: str, host: str) -> bool:
     """
@@ -98,14 +110,38 @@ def send_to_inbound(ref: str, host: str) -> bool:
             sent = False
     except KeyError:
         sent = False
-        log.error("Lack of configuration for inbound folder. Used variables: {} {} {} {}"
+        log.error("Lack of configuration for inbound folder. Used variables: {}, {}, {}, {}."
                   .format(settings.INBOUND_DIR_ENV_VAR,
-                          settings.SSH_ADDRESS_ENV_VAR,
                           settings.SSH_PORT_ENV_VAR,
                           settings.IS_NODE_USERNAME_ENV_VAR,
                           settings.IS_NODE_PRIVKEY_ENV_VAR))
     return sent
 
-def send_to_packages_repo():
-    path_to_repo = ""
-    return None
+
+def send_to_packages_repo(ref, host):
+    """
+    Copy files from build_ to remote IS repository - see docs.
+    :param ref: build_{ref}
+    :param host: when to send
+    :return:
+    """
+    sent = True
+    try:
+        is_dir = pathlib.Path(os.environ[settings.IS_DIR_ENV_VAR])
+        repo_path = is_dir / "packages"
+        ssh_host = host
+        ssh_port = os.environ[settings.SSH_PORT_ENV_VAR]
+        is_username = os.environ[settings.IS_NODE_USERNAME_ENV_VAR]
+        is_private_key_filepath = os.environ[settings.IS_NODE_PRIVKEY_ENV_VAR]
+        scp = SCPCommand(ssh_host, ssh_port, is_username, pathlib.Path(is_private_key_filepath))
+        src_dir = config.get_build_dir(ref)
+        if not scp.send_dirs(src_dir, repo_path):
+            sent = False
+    except KeyError:
+        log.error("Lack of configuration for inbound folder. Used variables: {}, {}, {}, {}."
+                  .format(settings.IS_DIR_ENV_VAR,
+                          settings.SSH_PORT_ENV_VAR,
+                          settings.IS_NODE_USERNAME_ENV_VAR,
+                          settings.IS_NODE_PRIVKEY_ENV_VAR))
+        sent = False
+    return sent

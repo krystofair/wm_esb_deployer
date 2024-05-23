@@ -40,8 +40,8 @@ SSH_ADDRESS_ENV_VAR = 'SSH_ADDRESS'
 SSH_PORT_ENV_VAR = 'SSH_PORT'
 IS_NODE_USERNAME_ENV_VAR = 'IS_NODE_USERNAME'
 IS_NODE_PRIVKEY_ENV_VAR = 'IS_NODE_PRIVKEY'
-IS_INSTANCE_PATH_ENV_VAR = 'IS_INSTANCE_PATH'
-IS_PACKAGE_REPO_PATH_ENV_VAR = 'IS_PACKAGE_REPO_DIR_PATH'
+INSTANCE_NAME_ENV_VAR = "INSTANCE_NAME"
+IS_DIR_ENV_VAR = "INTEGRATION_SERVER_DIR"
 NODES_ENV_VAR = "NODES"  # IPv4 separated by comma (,) - hosts where to send files
 # Environment - set below from gitlab pipeline.
 # Git tag name - set from gitlab pipeline
@@ -61,5 +61,6 @@ CI_MERGE_REQUEST_TARGET_BRANCH_NAME = "CI_MERGE_REQUEST_TARGET_BRANCH_NAME"  # f
 SRC_DIR = 'packages'  # directory which contains a code, like /src/ in Java
 SOURCE_CODE_EXT = ("xml", "java", "frag", "ndf")  # edit this if something missing
 SUBPROCESS_CMD_TIMEOUT = 90  # timeout in seconds.
+CHECK_CONNECTION_TIMEOUT = 90  # in seconds
 
 PACKAGES_TO_EXCLUDE = ["TpOssAdministrativeTools", "TpOssConfig", "TpOssConnectorChannel*"]

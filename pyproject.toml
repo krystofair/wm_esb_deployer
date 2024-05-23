@@ -9,7 +9,7 @@ authors = [
 ]
 
 name = 'esbdeployer'
-version = '1.3.0'
+version = '2.1.0'
 
 [project.scripts]
 deployer = "deployer.main:main"

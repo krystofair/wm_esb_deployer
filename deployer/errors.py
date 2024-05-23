@@ -15,3 +15,7 @@ class GitOperationError(BaseDeployerError):
 
 class LackRequiredConfiguration(BaseDeployerError):
     pass
+
+
+class RemoteCommandError(BaseDeployerError):
+    pass

@@ -174,7 +174,7 @@ def get_services_from_changes(changes) -> set:
     return services
 
 
-def clean_directory_after_deploy(ref):
+def clean_directory_after_deploy():
     """Delete build_{settings.PIPELINE_REFERENCE} directory which was created by deployer."""
     ref = settings.PIPELINE_REFERENCE
     directory = config.get_build_dir(ref)
