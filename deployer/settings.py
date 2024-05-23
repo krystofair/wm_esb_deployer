@@ -31,7 +31,7 @@ is meaningful in `*.cfg` files.
 """
 # name of variable from what create builds directories aka build_$VARIABLE
 PIPELINE_REFERENCE = "CI_MERGE_REQUEST_IID"
-ZONE = "ZONE"  # support for zones.
+ZONE_ENV_VAR = "ZONE"  # support for zones.
 BUILD_DIR_ENV_VAR = 'BUILD_DIR'  # repository where archives are created.
 CONFIG_DIR_ENV_VAR = 'CONFIG_DIR'
 # variables to use in configuration of environments
