@@ -10,6 +10,7 @@ import os
 import pathlib
 import sys
 import argparse
+import copy
 
 from . import (config, errors, sender, settings, build)
 from .settings import log
@@ -89,39 +90,48 @@ def action_deploy(inbound=False) -> bool:
     """
     ref = os.environ[settings.PIPELINE_REFERENCE]
     env = os.environ[settings.CI_ENVIRONMENT_NAME]
-    node_names = config.find_node_configs(env)
-    deploy_zone = config.get_env_var_or_default(settings.ZONE_ENV_VAR, default=None)
-    if deploy_zone:
-        del os.environ[settings.ZONE_ENV_VAR]
-    # collect info about nodes
-    nodes_info = {}
+    global_config = copy.deepcopy(os.environ)
+    node_configs = list()
     try:
-        for nf in node_names:
-            name = nf.rstrip('.cfg')
-            log.info("Load configuration for node {}".format(name))
-            config.load_node_configuration(env, name)
-            node_cfg = config.collect_last_loaded_config_to_dict()
-            if not node_cfg[settings.ZONE_ENV_VAR]:
-                node_cfg[settings.ZONE_ENV_VAR] = 'kokianowy_rbaon_astoarnuta'  # other default value than None
-            used_addresses = map(lambda x: x[settings.SSH_ADDRESS_ENV_VAR], nodes_info.values())
-            if node_cfg[settings.SSH_ADDRESS_ENV_VAR] in used_addresses:
-                raise errors.LoadingConfigurationError("IP address was used twice for different nodes")
-            nodes_info.update({name: node_cfg})
+        deploy_zone = config.get_env_var_or_default(settings.ZONE_ENV_VAR, default=None)
+        if deploy_zone:
+            del os.environ[settings.ZONE_ENV_VAR]
+        filenames_node_cfg = config.find_node_configs(env)
+        for nf in filenames_node_cfg:
+            node_name = nf.rstrip('.cfg')
+            log.info("Load configuration for node {}".format(node_name))
+            config.load_node_configuration(env, node_name)
+            zone = config.get_env_var_or_default(settings.ZONE_ENV_VAR, default='kokianowy_rbaon_astoarnuta')
+            os.environ[settings.ZONE_ENV_VAR] = zone
+            node_configs.append(copy.deepcopy(os.environ))
     except KeyError as e:
         log.error(e)
         return False
     except errors.LoadingConfigurationError as e:
         log.error(e)
         return False
-    configured_hosts = map(lambda x: x[settings.SSH_ADDRESS_ENV_VAR], nodes_info.values())
+    configured_hosts = map(lambda x: x[settings.SSH_ADDRESS_ENV_VAR], node_configs)
     if not deploy_zone:  # not specified zone
         hosts = set(os.environ[settings.NODES_ENV_VAR].split(','))
         _ = [hosts.add(ch) for ch in configured_hosts]  # add configured hosts even there are not included in NODES var
     else:
-        hosts = set([x[settings.SSH_ADDRESS_ENV_VAR] for x in nodes_info.values()
-                     if x[settings.SSH_ADDRESS_ENV_VAR] and x[settings.ZONE_ENV_VAR] == deploy_zone])
+        hosts = set()
+        for cfg in node_configs:
+            addr = cfg[settings.SSH_ADDRESS_ENV_VAR]
+            zone = cfg[settings.ZONE_ENV_VAR]
+            if zone == deploy_zone:
+                hosts.add(addr)
     log.info("sending part...")
     for host in hosts:
+        os.environ = global_config
+        try:
+            os.environ.update([cfg for cfg in node_configs if cfg[settings.SSH_ADDRESS_ENV_VAR] == host][0])
+        except IndexError:
+            if deploy_zone:
+                log.error("Not load SSH_ADDRESS for host {}".format(host))
+                return False
+            else:
+                pass
         if inbound:
             log.info("Sending packages to inbound at host {}".format(host))
             if not sender.send_to_inbound(ref, host):

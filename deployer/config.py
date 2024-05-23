@@ -134,16 +134,3 @@ def get_list_env_var_from_settings() -> list:
     :return: list of (name, value) tuple of variables.
     """
     return [member for member in inspect.getmembers(settings) if member[0].endswith('_ENV_VAR')]
-
-
-def collect_last_loaded_config_to_dict() -> dict:
-    """
-    Collect configuration from local environment, for be accessible further for python code.
-    Treat all variables as optional.
-    :return: dict of name -> value, but as values for variables from settings.
-    """
-    configuration = {}
-    keys = (k for n, k in get_list_env_var_from_settings())
-    for key in keys:
-        configuration[key] = get_env_var_or_default(key, default=None)
-    return configuration
