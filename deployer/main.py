@@ -171,6 +171,7 @@ def main():
         log.error(e)
         log.info("Error occured. Ending...")
         exit(-1)
+    exit(0)
 
 
 def save_config_from_yaml() -> None:
