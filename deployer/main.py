@@ -120,6 +120,8 @@ def action_deploy(inbound=False) -> bool:
         log.error(e)
         return False
     for host in hosts:
+        log.info("Loading configuration for environment {}".format(env))
+        config.load_configuration(env)
         try:
             log.info("Loading configuration for configured host {}".format(host))
             config.load_node_configuration(env, configured_hosts[host])
@@ -136,6 +138,7 @@ def action_deploy(inbound=False) -> bool:
             if not sender.send_to_packages_repo(ref, host):
                 log.error(f"Sending packages for host {host} to repository dir for environment {env} failed")
                 return False
+    return True
 
 
 def main():
