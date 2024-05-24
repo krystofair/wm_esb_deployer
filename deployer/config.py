@@ -127,6 +127,12 @@ def get_build_dir(ref) -> str:
     return build_dir
 
 
+def get_source_dir() -> pathlib.Path:
+    repository = get_env_var_or_default(settings.REPO_DIR_ENV_VAR, default='.')
+    sources_dir_name = settings.SRC_DIR
+    return pathlib.Path(repository) / sources_dir_name
+
+
 def get_list_env_var_from_settings() -> list:
     """
     Listing members of environment variables,

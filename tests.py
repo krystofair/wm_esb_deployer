@@ -2,6 +2,7 @@ import os
 import pathlib
 import unittest
 import shutil
+import subprocess
 
 from deployer import *
 
@@ -74,7 +75,6 @@ class LoadingConfigurationTest(unittest.TestCase):
             _ = [e.path for e in os.scandir(prod_config_dir)]
 
 
-
 class BuildingPackage(unittest.TestCase):
     def test_making_package_zip_archive(self):
         self.skipTest("write new")
@@ -132,10 +132,37 @@ class TestMainRun(unittest.TestCase):
 
     def test_action_build_inbound(self):
         os.environ[settings.CI_PROJECT_DIR] = '.'  # must be because
-        os.environ[settings.PIPELINE_REFERENCE] = 'INBOUND'
+        os.environ[settings.PIPELINE_REFERENCE] = 'inbound'
         main.action_build(True, False)
-        zips = [e.name for e in os.scandir("build_INBOUND") if e.is_file() and e.name.endswith('.zip')]
+        zips = [e.name for e in os.scandir("build_inbound") if e.is_file() and e.name.endswith('.zip')]
         self.assertIn("TpOssAdapterDms.zip", zips)
+        shutil.rmtree("build_inbound")
+
+    def test_action_build_not_inbound_changes_only(self):
+        """
+        After this test there should be prepared packages as normal (not zip) dirs.
+        And this packages MUST contain only changed services.
+        """
+        os.environ[settings.PIPELINE_REFERENCE] = "NO_INBOUND_CHANGES_ONLY"
+        os.environ[settings.CI_MERGE_REQUEST_TARGET_BRANCH_NAME] = "CO"
+        ref = os.environ[settings.PIPELINE_REFERENCE]
+        main.action_build(False, True)
+        build_dir = config.get_build_dir(ref)
+        self.assertTrue(os.path.exists(
+            build_dir / pathlib.Path("TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processUpdateCFServiceRequest/flow.xml"))
+        )
+        self.assertTrue(not os.path.exists(
+            build_dir / pathlib.Path(
+                "TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processUpdateCFServiceResponse/flow.xml"))
+        )
+        cmd_args = (
+            f"diff packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processUpdateCFServiceRequest/flow.xml"
+            f" {build_dir}/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processUpdateCFServiceRequest/flow.xml"
+        ).split(' ')
+        process = subprocess.run(cmd_args, capture_output=True, encoding='utf-8')
+        self.assertEqual(process.stdout.strip(), "")
+        self.assertEqual(process.stderr.strip(), "")
+        shutil.rmtree("build_NO_INBOUND_CHANGES_ONLY")
 
 
 class TestBuild(unittest.TestCase):
@@ -152,7 +179,6 @@ class TestBuild(unittest.TestCase):
                      "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/node.idf",
                      "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/utils/node.ndf"]
         service_set = build.get_services_from_changes(diff_line)  # get first element from set.
-        print(service_set)
         self.assertIn("packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateWorkOrder", service_set)
         self.assertIn("packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService", service_set)
         self.assertIn("packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/utils", service_set)
@@ -167,19 +193,10 @@ class TestBuild(unittest.TestCase):
         self.assertIn("TpOssChannelJazz", packages)
         self.assertNotIn("TpOssConnectorChannelJazz", packages)
 
-    def test_ignoring_namespace(self):
-        shutil.copytree('packages/TpOssAdapterDms', 'build_test0123/TpOssAdapterDms',
-                        ignore=shutil.ignore_patterns("ns"))
-        try:
-            with open('build_test0123/TpOssAdapterDms/manifest.v3', 'r'):
-                pass
-        except FileNotFoundError:
-            self.fail("File should exist.")
-        try:
-            with open('build_test0123/TpOssAdapterDms/ns/tp/node.idf', 'r'):
-                self.fail("File should not exist.")
-        except FileNotFoundError:
-            pass
+    def test_build_empty_package(self):
+        build.create_empty_package("TpOssChannelJazz", "build_EMPTY")
+        self.assertFalse(os.path.exists("build_EMPTY/TpOssChannelJazz/ns"))
+        shutil.rmtree("build_EMPTY")
 
     def test_is_package_to_exclude(self):
         self.assertTrue(build.is_package_to_exclude('TpOssConfig'))
@@ -240,8 +257,8 @@ class TestRemoteCommand(unittest.TestCase):
             self.fail(output)
 
     def test_connection(self):
+        settings.CHECK_CONNECTION_TIMEOUT = 2
         self.assertTrue(remoter.check_start_status("192.168.56.109", "22"))
-        settings.CHECK_CONNECTION_TIMEOUT = 5
         self.assertFalse(remoter.check_start_status("192.168.56.109"))  # default port 5555 not open in my VM
 
     def test_check_stop_status(self):

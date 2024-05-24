@@ -5,6 +5,7 @@ import shutil
 import pathlib
 import os
 import itertools
+import typing
 from datetime import datetime
 
 from . import settings, config
@@ -23,12 +24,12 @@ def build_package_for_inbound(name: str, ref: str, skip_check_archive_exist=Fals
     error = False
     try:
         # initialize variables
-        repository_dir = config.get_env_var_or_default(settings.REPO_DIR_ENV_VAR, default='.')
         build_dir = config.get_build_dir(ref)
+        source_dir = config.get_source_dir()
         os.makedirs(build_dir, exist_ok=True)
         if 'zip' in [n for n, _ in shutil.get_archive_formats()]:
-            shutil.make_archive(f"{build_dir}/{name}",
-                                'zip', root_dir=f"{repository_dir}/{settings.SRC_DIR}/{name}")
+            shutil.make_archive(str(pathlib.Path(build_dir) / name),
+                                'zip', root_dir=str(source_dir/name))
             if not skip_check_archive_exist:
                 try:
                     if not [file for file in os.scandir(build_dir) if file.name == f"{name}.zip"]:
@@ -86,10 +87,10 @@ def get_changes_from_git_diff(mock=False):
             "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processHandleConfigureCFServiceResultRequest/node.ndf",
             "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processUpdateCFServiceRequest/flow.xml",
             "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processUpdateCFServiceRequest/node.ndf",
-            "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processUpdateCFServiceResponse/flow.xml",
-            "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/priv/processUpdateCFServiceResponse/node.ndf",
             "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/handleConfigureCFServiceResult/flow.xml",
-            "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/handleConfigureCFServiceResult/node.ndf"
+            "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/handleConfigureCFServiceResult/node.ndf",
+            "packages/TpOssChannelJazz2/ns/tp/oss/channel/jazz/resource/priv/processGetDeviceParametersRequest/flow.xml",
+            "packages/TpOssChannelJazz2/ns/tp/oss/channel/jazz/resource/priv/processGetDeviceParametersRequest/node.ndf"
         ]
     else:
         return GitOperation.diff_to_target_branch(os.environ[settings.CI_MERGE_REQUEST_TARGET_BRANCH_NAME])
@@ -181,3 +182,38 @@ def clean_directory_after_deploy():
     for entry in os.scandir(directory):
         if entry.is_dir() and entry.name == f"build_{ref}":
             shutil.rmtree(entry.path)
+
+
+def create_empty_package(name, where) -> bool:
+    """
+    Build package from exists already, but with ns/ folder empty.
+    Then there will be added only changed services.
+    :param name: name of package
+    :param where: in which folder create that empty package
+    :return: True if good and new package was added to build_* dir. False otherwise.
+    """
+    try:
+        shutil.copytree(f'packages/{name}', f'{where}/{name}', ignore=shutil.ignore_patterns("ns"))
+    except Exception as e:
+        log.error(e)
+        return False
+    return True
+
+
+def copy_services(build_dir: str, package: str, service_dir_list: typing.Iterable):
+    """
+    :param package: package from which services are,
+    :param service_dir_list: list of absolute paths to where files flow.xml etc. are,
+    :param build_dir: is buiding directory where new package are created and to that package services are copied.
+    :return: True if copy all service well, False otherwise.
+    """
+    source_dir = config.get_source_dir() / package  # $REPO_DIR/packages/$package
+    service_dirs = [x.split(package)[1][1:] for x in service_dir_list]  # /ns/* # and get rid of '/'
+    for service_dir in service_dirs:
+        try:
+            src = pathlib.Path(source_dir) / pathlib.Path(service_dir)
+            dst = pathlib.Path(build_dir) / package / service_dir
+            shutil.copytree(src, dst)
+        except Exception as e:
+            log.exception(e)
+            raise

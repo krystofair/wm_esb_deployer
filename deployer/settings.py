@@ -7,7 +7,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(created)f |%(levelname)s| %(module)s %(lineno)d %(message)s -_-")
 log = logging.getLogger()
 
-mock = False  # helping flag to using mocks.
+mock = False  # helping flag to using mocks in tests
 
 # if script is running from another context, otherwise it will be current directory (.)
 

@@ -10,7 +10,6 @@ import os
 import pathlib
 import sys
 import argparse
-import copy
 
 from . import (config, errors, sender, settings, build)
 from .settings import log
@@ -48,19 +47,23 @@ def action_build(inbound=False, changes_only=True) -> bool:
     :return: True if good, False otherwise.
     """
     ref = os.environ[settings.PIPELINE_REFERENCE]
+    build_dir = config.get_build_dir(ref)
+    try:
+        log.info("Make dir for build")
+        os.makedirs(build_dir)
+    except FileExistsError:
+        log.error("Build for this merge request has already done.")
+        return False
     if inbound:
         if changes_only:
             changes = build.get_changes_from_git_diff(mock=settings.mock)
             if not changes:
+                log.info("There were not changes")
                 return False
             packages = build.get_packages_from_changes(changes)
         else:
+            log.info("Get all packages from repository without this excluded from settings")
             packages = build.get_all_package()
-            try:
-                os.makedirs(config.get_build_dir(ref))
-            except FileExistsError:
-                log.error("Build for this merge request has already done.")
-                return False
         for package in packages:
             if build.build_package_for_inbound(package, ref):
                 log.info("Built {} successfully".format(package))
@@ -69,12 +72,24 @@ def action_build(inbound=False, changes_only=True) -> bool:
                 return False
     elif not changes_only:
         packages = build.get_all_package()
-        build_dir = config.get_build_dir(ref)
         for package in packages:
             source_dir = settings.SRC_DIR / pathlib.Path(package)
             os.symlink(source_dir, build_dir, target_is_directory=True)
     else:
-        return False  # not implemented.
+        log.info("Set up build for is_instance script deploying.")
+        changes = build.get_changes_from_git_diff(settings.mock)
+        services = build.get_services_from_changes(changes)
+        packages = build.get_packages_from_changes(changes)
+        try:
+            for package in packages:
+                build.create_empty_package(package, build_dir)
+                services_to_copy = list(filter(lambda x: package in x.split('/'), services))
+                common_names_svc = map(build.extract_is_style_service_name, services_to_copy)
+                log.info("In package {}; Copying services: {}".format(package, ', '.join(common_names_svc)))
+                build.copy_services(build_dir, package, services_to_copy)
+        except Exception as e:
+            log.error(e)
+            return False
     return True
 
 
