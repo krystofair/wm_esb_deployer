@@ -112,7 +112,7 @@ def action_deploy(inbound=False) -> bool:
             configured_hosts[addr] = node_name
         if not deploy_zone:
             hosts = set(os.environ[settings.NODES_ENV_VAR].split(','))
-            hosts |= configured_host.keys()
+            hosts |= configured_hosts.keys()
     except KeyError as e:
         log.error(e)
         return False
