@@ -54,7 +54,7 @@ class SSHCommand:
             return None
 
 
-def run_is_instance(host):
+def run_is_instance(host, packages='all'):
     """
     Invoke command /path/to/is_instance -Dinstance.name={} -Dpackage.list={},{} at remote server
     :return:
@@ -66,7 +66,11 @@ def run_is_instance(host):
         script_path = is_dir / pathlib.Path("instances/is_instance.sh")
         # command = f"{script_path} update -Dpackage.list={packages} -Dinstance.name={instance_name}"
         # Without determine package.list, All non-default package will be taken.
-        command = f"{script_path} update -Dinstance.name={instance_name}"
+        if not isinstance(packages, str):
+            packages_str = ','.join(packages)
+        else:
+            packages_str = packages
+        command = f"{script_path} update -Dpackage.list={packages_str} -Dinstance.name={instance_name}"
         ssh = SSHCommand.construct(host)
         if not ssh:
             log.error("Cannot construct SSH client.")
