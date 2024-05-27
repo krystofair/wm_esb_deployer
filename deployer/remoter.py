@@ -24,7 +24,8 @@ class SSHCommand:
             command
         ).split(' ')
         try:
-            process = subprocess.run(cmd_args, capture_output=True, encoding='utf-8')
+            process = subprocess.run(cmd_args, capture_output=True, encoding='utf-8',
+                                     timeout=settings.SUBPROCESS_CMD_TIMEOUT)
             if process.returncode != 0:
                 raise errors.RemoteCommandError(process.stderr)
             return process.stdout
@@ -92,7 +93,7 @@ def run_is_instance(host, packages='all'):
     return invoke
 
 
-def shutdown_server(host):
+def shutdown_server(host) -> bool:
     """Invoke remove script for shutdown server"""
     try:
 
@@ -102,12 +103,15 @@ def shutdown_server(host):
         ssh = SSHCommand.construct(host)
         # ssh = SSHCommand(ssh_host, ssh_port, is_username, pathlib.Path(is_private_key_filepath))
         output = ssh.invoke(script_path)
-        log.info(output)
+        if "Stopped" in output:
+            return True
     except KeyError:
         log.error("Lack of configuration. Used variables: {} {}".format(
             settings.IS_DIR_ENV_VAR, settings.INSTANCE_NAME_ENV_VAR
         ))
-        raise
+    except TimeoutError:
+        log.error("Shutdown server timeout. Please check status manually.")
+    return False
 
 
 def start_server(host):
@@ -118,7 +122,7 @@ def start_server(host):
         is_dir = os.environ[settings.IS_DIR_ENV_VAR]
         script_path = is_dir / pathlib.Path(f"instances/{instance_name}/bin/startup.sh")
         try:
-            ssh = SSHCommand.construct(host)  # raises
+            ssh = SSHCommand.construct(host)
             ssh.invoke(f"{script_path}")
         except errors.RemoteCommandError as e:  # normal error handling
             log.error(e)
@@ -153,16 +157,17 @@ def check_start_status(host, port=5555) -> bool:
         return False
 
 
-def check_stop_status(host) -> bool:
+def check_process_live(host, process_string) -> bool:
     """
     Check if server stoped and possible to invoke is_instance.sh script.
-    :param host: at which server check that status
+    :param host: at which server check that status,
+    :param process_string: string which will be searched in ps command.
     :return: True if stopped, False otherwise.
     """
     try:
         ssh = SSHCommand.construct(host)
-        output = ssh.invoke("ps -ef | grep IS | grep -v grep")
-        if not output:
+        output = ssh.invoke(f"ps -ef | grep {process_string} | grep -v grep")
+        if not output.strip():
             return True
     except KeyError:
         log.error("There are not a configuration for {} {} {}".format(

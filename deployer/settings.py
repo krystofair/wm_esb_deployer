@@ -60,7 +60,7 @@ CI_MERGE_REQUEST_TARGET_BRANCH_NAME = "CI_MERGE_REQUEST_TARGET_BRANCH_NAME"  # f
 # where to find sources
 SRC_DIR = 'packages'  # directory which contains a code, like /src/ in Java
 SOURCE_CODE_EXT = ("xml", "java", "frag", "ndf")  # edit this if something missing
-SUBPROCESS_CMD_TIMEOUT = 90  # timeout in seconds.
+SUBPROCESS_CMD_TIMEOUT = 300  # timeout in seconds.
 CHECK_CONNECTION_TIMEOUT = 90  # in seconds
 CHECK_STOP_STATUS_TIME = 1  # in seconds, waiting after execute shutdown command.
 CHECK_STOP_STATUS_COUNT = 4  # how many times check before return False

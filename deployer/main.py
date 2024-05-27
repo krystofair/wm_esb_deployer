@@ -155,23 +155,21 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
                 log.error(f"Sending packages for host {host} to repository dir for environment {env} failed")
                 return False
             log.info("Shutdown server.")
-            remoter.shutdown_server(host)
-            for _ in range(settings.CHECK_STOP_STATUS_COUNT):
-                time.sleep(settings.CHECK_STOP_STATUS_TIME)
-                log.info("Check stop status of server.")
-                if remoter.check_stop_status(host):
-                    log.info("Run is_instance.sh script")
-                    if not remoter.run_is_instance(host):
-                        return False
-                    remoter.clean_package_repo(host)
-                    log.info("Start server.")
-                    remoter.start_server(host)
-                    try:
-                        log.info("Check start status.")
-                        remoter.check_start_status(host)
-                        return True
-                    except TimeoutError:
-                        log.error("Server {} startup failed.".format(host))
+            if not remoter.shutdown_server(host):
+                return False
+            log.info("Run is_instance.sh script")
+            if not remoter.run_is_instance(host):
+                return False
+            log.info("Clean repository folder")
+            remoter.clean_package_repo(host)
+            log.info("Start server.")
+            remoter.start_server(host)
+            try:
+                log.info("Check start status.")
+                remoter.check_start_status(host)
+                return True
+            except TimeoutError:
+                log.error("Server {} startup failed.".format(host))
             return False
     return True
 
