@@ -150,26 +150,26 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
                 log.error(f"Sending packages for host {host} to inbound for environment {env} failed")
                 return False
         else:
-            log.info("Sending packages to repository dir at host {}".format(host))
-            if not sender.send_to_packages_repo(ref, host):
-                log.error(f"Sending packages for host {host} to repository dir for environment {env} failed")
+            if not with_restart:
+                log.info("Sending packages to repository dir at host {}".format(host))
+                if not sender.send_to_packages_repo(ref, host):
+                    log.error(f"Sending packages for host {host} to repository dir for environment {env} failed")
+                    return False
+            elif with_restart:
+                log.info("Shutdown server.")
+                if not remoter.shutdown_server(host):
+                    return False
+                log.info("Run is_instance script")
+                remoter.run_is_instance(host)
+                log.info("Start server.")
+                remoter.start_server(host)
+                try:
+                    log.info("Check start status.")
+                    remoter.check_start_status(host)
+                    return True
+                except TimeoutError:
+                    log.error("Server {} startup failed.".format(host))
                 return False
-            log.info("Shutdown server.")
-            if not remoter.shutdown_server(host):
-                return False
-            log.info("Run is_instance.sh script")
-            if not remoter.run_is_instance(host):
-                return False
-            log.info("Clean repository folder")
-            remoter.clean_package_repo(host)
-            log.info("Start server.")
-            remoter.start_server(host)
-            try:
-                log.info("Check start status.")
-                remoter.check_start_status(host)
-                return True
-            except TimeoutError:
-                log.error("Server {} startup failed.".format(host))
             return False
     return True
 
