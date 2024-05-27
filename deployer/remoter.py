@@ -64,7 +64,7 @@ def run_is_instance(host):
         instance_name = config.get_env_var_or_default(os.environ[settings.INSTANCE_NAME_ENV_VAR], default='default')
         is_dir = os.environ[settings.IS_DIR_ENV_VAR]
         script_path = is_dir / pathlib.Path("instances/is_instance.sh")
-        # command = f"{script_path} -Dpackage.list={packages} -Dinstance.name={instance_name}"
+        # command = f"{script_path} update -Dpackage.list={packages} -Dinstance.name={instance_name}"
         # Without determine package.list, All non-default package will be taken.
         command = f"{script_path} update -Dinstance.name={instance_name}"
         ssh = SSHCommand.construct(host)
