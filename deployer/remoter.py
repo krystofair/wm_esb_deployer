@@ -90,6 +90,9 @@ def run_is_instance(host, packages='all'):
         log.error("Lack of configuration. Used variables: {} {}('default')".format(
             settings.IS_DIR_ENV_VAR, settings.INSTANCE_NAME_ENV_VAR,
         ))
+    except Exception as e:
+        log.exception(e)
+        invoke = False
     return invoke
 
 
@@ -148,36 +151,13 @@ def check_start_status(host, port=5555) -> bool:
     socket.setdefaulttimeout(settings.CHECK_CONNECTION_TIMEOUT)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        log.info(f"checking connection")
+        log.info(f"Check connection.")
         s.connect((host, int(port)))
         s.close()
         return True
     except TimeoutError:
         log.error("Timeout error - server started failed.")
         return False
-
-
-def check_process_live(host, process_string) -> bool:
-    """
-    Check if server stoped and possible to invoke is_instance.sh script.
-    :param host: at which server check that status,
-    :param process_string: string which will be searched in ps command.
-    :return: True if stopped, False otherwise.
-    """
-    try:
-        ssh = SSHCommand.construct(host)
-        output = ssh.invoke(f"ps -ef | grep {process_string} | grep -v grep")
-        if not output.strip():
-            return True
-    except KeyError:
-        log.error("There are not a configuration for {} {} {}".format(
-            settings.IS_NODE_USERNAME_ENV_VAR,
-            settings.IS_NODE_PRIVKEY_ENV_VAR,
-            settings.SSH_PORT_ENV_VAR
-        ))
-    except (Exception, errors.RemoteCommandError, AttributeError) as e:
-        log.error(e)
-    return False
 
 
 def clean_package_repo(host):

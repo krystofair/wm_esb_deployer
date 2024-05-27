@@ -136,10 +136,10 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
         log.error(e)
         return False
     for host in hosts:
-        log.info("Loading configuration for environment {}".format(env))
+        log.info("Load global configuration of {}".format(env))
         config.load_configuration(env)
         try:
-            log.info("Loading configuration for configured host {}".format(host))
+            log.info("Load configuration of {}".format(host))
             config.load_node_configuration(env, configured_hosts[host])
         except KeyError:
             # supress this cause this means that host are loaded from spliting by comma
@@ -150,27 +150,23 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
                 log.error(f"Sending packages for host {host} to inbound for environment {env} failed")
                 return False
         else:
-            if not with_restart:
-                log.info("Sending packages to repository dir at host {}".format(host))
-                if not sender.send_to_packages_repo(ref, host):
-                    log.error(f"Sending packages for host {host} to repository dir for environment {env} failed")
-                    return False
-            elif with_restart:
+            log.info("Sending packages to repository dir at host {}".format(host))
+            if not sender.send_to_packages_repo(ref, host):
+                log.error(f"Sending packages for host {host} to repository dir for environment {env} failed")
+                return False
+            if with_restart:
                 log.info("Shutdown server.")
                 if not remoter.shutdown_server(host):
+                    log.error("Shutdown server command timeout. Check it.")
                     return False
-                log.info("Run is_instance script")
-                remoter.run_is_instance(host)
+            log.info("Run is_instance script")
+            remoter.run_is_instance(host)
+            if with_restart:
                 log.info("Start server.")
                 remoter.start_server(host)
-                try:
-                    log.info("Check start status.")
-                    remoter.check_start_status(host)
-                    return True
-                except TimeoutError:
-                    log.error("Server {} startup failed.".format(host))
-                return False
-            return False
+                log.info("Check start status.")
+                if not remoter.check_start_status(host):
+                    return False
     return True
 
 
