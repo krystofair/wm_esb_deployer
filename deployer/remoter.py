@@ -63,7 +63,7 @@ def run_is_instance(host):
     try:
         instance_name = config.get_env_var_or_default(os.environ[settings.INSTANCE_NAME_ENV_VAR], default='default')
         is_dir = os.environ[settings.IS_DIR_ENV_VAR]
-        script_path = is_dir / pathlib.Path("/instances/is_instance.sh")
+        script_path = is_dir / pathlib.Path("instances/is_instance.sh")
         # command = f"{script_path} -Dpackage.list={packages} -Dinstance.name={instance_name}"
         # Without determine package.list, All non-default package will be taken.
         command = f"{script_path} -Dinstance.name={instance_name}"
@@ -94,7 +94,7 @@ def shutdown_server(host):
 
         instance_name = os.environ[settings.INSTANCE_NAME_ENV_VAR]
         is_dir = os.environ[settings.IS_DIR_ENV_VAR]
-        script_path = is_dir / pathlib.Path(f"/instances/{instance_name}/bin/shutdown.sh")
+        script_path = is_dir / pathlib.Path(f"instances/{instance_name}/bin/shutdown.sh")
         ssh = SSHCommand.construct(host)
         # ssh = SSHCommand(ssh_host, ssh_port, is_username, pathlib.Path(is_private_key_filepath))
         output = ssh.invoke(script_path)
@@ -112,7 +112,7 @@ def start_server(host):
     try:
         instance_name = os.environ[settings.INSTANCE_NAME_ENV_VAR]
         is_dir = os.environ[settings.IS_DIR_ENV_VAR]
-        script_path = is_dir / pathlib.Path(f"/instances/{instance_name}/bin/startup.sh")
+        script_path = is_dir / pathlib.Path(f"instances/{instance_name}/bin/startup.sh")
         try:
             ssh = SSHCommand.construct(host)  # raises
             ssh.invoke(f"{script_path}")
