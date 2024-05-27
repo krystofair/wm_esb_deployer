@@ -66,7 +66,7 @@ def run_is_instance(host):
         script_path = is_dir / pathlib.Path("instances/is_instance.sh")
         # command = f"{script_path} -Dpackage.list={packages} -Dinstance.name={instance_name}"
         # Without determine package.list, All non-default package will be taken.
-        command = f"{script_path} -Dinstance.name={instance_name}"
+        command = f"{script_path} update -Dinstance.name={instance_name}"
         ssh = SSHCommand.construct(host)
         if not ssh:
             log.error("Cannot construct SSH client.")
