@@ -13,6 +13,15 @@ from .settings import log
 from .git import GitOperation
 
 
+def build_packages_for_is_instance(build_dir, packages, services):
+    for package in packages:
+        create_empty_package(package, build_dir)
+        services_to_copy = list(filter(lambda x: package in x.split('/'), services))
+        common_names_svc = map(extract_is_style_service_name, services_to_copy)
+        log.info("In package {}; Copying services: {}".format(package, ', '.join(common_names_svc)))
+        copy_services(build_dir, package, services_to_copy)
+
+
 def build_package_for_inbound(name: str, ref: str, skip_check_archive_exist=False) -> bool:
     """
     Building one ZIP from one package
@@ -46,6 +55,18 @@ def build_package_for_inbound(name: str, ref: str, skip_check_archive_exist=Fals
         error = True
     return not error
 
+@functools.cache
+def is_default_package(name) -> bool:
+    """
+    Determine if package from vendor. Names are listed in settings.
+    :return: True if name is on the list, False otherwise.
+    """
+    for package in settings.DEFAULT_PACKAGES:
+        if package.endswith('*') and name.startswith(package[:-1]):
+            return True
+        elif package == name:
+            return True
+    return False
 
 @functools.cache
 def is_package_to_exclude(package_name) -> bool:

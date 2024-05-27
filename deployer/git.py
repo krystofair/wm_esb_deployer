@@ -1,4 +1,5 @@
 """Set of git operations"""
+import dataclasses
 import subprocess
 
 from . import errors, settings
@@ -32,3 +33,17 @@ class GitOperation:
             log.exception(e)
             raise errors.GitOperationError(e) from None
         return changes
+
+
+# import http.client as client
+# import http
+# @dataclasses.dataclass
+# class GitLabOperation:
+#     project_id: str
+#     private_token: str
+#
+#     def tag(self, ref, name, msg=""):
+#         """tagowanie"""
+#         con = client.HTTPConnection("192.168.56.109", 43211)
+#         con.putheader("PRIVATE_TOKEN", self.private_token)
+#         con.request("POST", f"/projects/{self.project_id}/repository/tags/?tag_name={name}&ref={ref}")

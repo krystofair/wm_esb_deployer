@@ -205,6 +205,11 @@ class TestBuild(unittest.TestCase):
         self.assertFalse(build.is_package_to_exclude('TpOssConnectorAtrium'))
         self.assertFalse(build.is_package_to_exclude('TpOssChannelNgnp'))
 
+    def test_is_package_default(self):
+        self.assertTrue(build.is_default_package("WmPublic"))
+        self.assertFalse(build.is_default_package("TpOssCommonTools"))
+        self.assertTrue(build.is_default_package("Default"))
+
     def test_only_changes_service_copy(self):
         self.skipTest("write new")
         # build.clean_directory_after_deploy()

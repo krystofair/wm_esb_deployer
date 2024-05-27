@@ -32,26 +32,48 @@ class SSHCommand:
             log.exception(e)
             raise
 
+    @staticmethod
+    def construct(host):
+        """
+        Pull out from environment basic parameters for SSHCommand client.
+        :return: None if cannot construct, SSHCommand object otherwise.
+        """
+        try:
+            ip = host
+            port = config.get_env_var_or_default(os.environ[settings.SSH_PORT_ENV_VAR], default='22')
+            username = os.environ[settings.IS_NODE_USERNAME_ENV_VAR]
+            private_key_filepath = os.environ[settings.IS_NODE_PRIVKEY_ENV_VAR]
+            return SSHCommand(ip, port, username, pathlib.Path(private_key_filepath))
+        except KeyError:
+            log.error("Lack of configuration. Used variables: {} {} {}".format(
+                settings.SSH_PORT_ENV_VAR, settings.IS_NODE_USERNAME_ENV_VAR, settings.IS_NODE_PRIVKEY_ENV_VAR
+            ))
+            return None
+        except Exception as e:
+            log.exception(e)
+            return None
 
-def run_is_instance(host, package_list):
+
+def run_is_instance(host):
     """
     Invoke command /path/to/is_instance -Dinstance.name={} -Dpackage.list={},{} at remote server
     :return:
     """
     invoke = True
     try:
-        ssh_host = host
-        ssh_port = config.get_env_var_or_default(os.environ[settings.SSH_PORT_ENV_VAR], default='22')
-        is_username = os.environ[settings.IS_NODE_USERNAME_ENV_VAR]
-        is_private_key_filepath = os.environ[settings.IS_NODE_PRIVKEY_ENV_VAR]
         instance_name = config.get_env_var_or_default(os.environ[settings.INSTANCE_NAME_ENV_VAR], default='default')
         is_dir = os.environ[settings.IS_DIR_ENV_VAR]
         script_path = is_dir / pathlib.Path("/instances/is_instance.sh")
-        packages = ','.join(package_list)
-        command = f"{script_path} -Dpackage.list={packages} -Dinstance.name={instance_name}"
-        ssh = SSHCommand(ssh_host, ssh_port, is_username, pathlib.Path(is_private_key_filepath))
+        # command = f"{script_path} -Dpackage.list={packages} -Dinstance.name={instance_name}"
+        # Without determine package.list, All non-default package will be taken.
+        command = f"{script_path} -Dinstance.name={instance_name}"
+        ssh = SSHCommand.construct(host)
+        if not ssh:
+            log.error("Cannot construct SSH client.")
+            return False
         try:
-            ssh.invoke(command)
+            output = ssh.invoke(command)
+            log.info("SSH invoke output: {}".format(output))
         except errors.RemoteCommandError as e:  # normal error handling
             log.error(e)
             invoke = False
@@ -60,34 +82,27 @@ def run_is_instance(host, package_list):
             invoke = False
     except KeyError:
         invoke = False
-        log.error("Lack of configuration. Used variables: {} {} {} {}"
-                  .format(settings.IS_DIR_ENV_VAR,
-                          settings.SSH_PORT_ENV_VAR,
-                          settings.IS_NODE_USERNAME_ENV_VAR,
-                          settings.IS_NODE_PRIVKEY_ENV_VAR))
+        log.error("Lack of configuration. Used variables: {} {}('default')".format(
+            settings.IS_DIR_ENV_VAR, settings.INSTANCE_NAME_ENV_VAR,
+        ))
     return invoke
 
 
 def shutdown_server(host):
     """Invoke remove script for shutdown server"""
     try:
-        ssh_host = host
-        ssh_port = os.environ[settings.SSH_PORT_ENV_VAR]
-        is_username = os.environ[settings.IS_NODE_USERNAME_ENV_VAR]
-        is_private_key_filepath = os.environ[settings.IS_NODE_PRIVKEY_ENV_VAR]
+
         instance_name = os.environ[settings.INSTANCE_NAME_ENV_VAR]
         is_dir = os.environ[settings.IS_DIR_ENV_VAR]
         script_path = is_dir / pathlib.Path(f"/instances/{instance_name}/bin/shutdown.sh")
-        ssh = SSHCommand(ssh_host, ssh_port, is_username, pathlib.Path(is_private_key_filepath))
+        ssh = SSHCommand.construct(host)
+        # ssh = SSHCommand(ssh_host, ssh_port, is_username, pathlib.Path(is_private_key_filepath))
         output = ssh.invoke(script_path)
         log.info(output)
     except KeyError:
-        log.error("Lack of configuration. Used variables: {} {} {} {} {}"
-                  .format(settings.IS_DIR_ENV_VAR,
-                          settings.SSH_PORT_ENV_VAR,
-                          settings.IS_NODE_USERNAME_ENV_VAR,
-                          settings.IS_NODE_PRIVKEY_ENV_VAR,
-                          settings.INSTANCE_NAME_ENV_VAR))
+        log.error("Lack of configuration. Used variables: {} {}".format(
+            settings.IS_DIR_ENV_VAR, settings.INSTANCE_NAME_ENV_VAR
+        ))
         raise
 
 
@@ -95,15 +110,11 @@ def start_server(host):
     """Start server"""
     invoke = True
     try:
-        ssh_host = host
-        ssh_port = os.environ[settings.SSH_PORT_ENV_VAR]
-        is_username = os.environ[settings.IS_NODE_USERNAME_ENV_VAR]
-        is_private_key_filepath = os.environ[settings.IS_NODE_PRIVKEY_ENV_VAR]
         instance_name = os.environ[settings.INSTANCE_NAME_ENV_VAR]
         is_dir = os.environ[settings.IS_DIR_ENV_VAR]
         script_path = is_dir / pathlib.Path(f"/instances/{instance_name}/bin/startup.sh")
-        ssh = SSHCommand(ssh_host, ssh_port, is_username, pathlib.Path(is_private_key_filepath))
         try:
+            ssh = SSHCommand.construct(host)  # raises
             ssh.invoke(f"{script_path}")
         except errors.RemoteCommandError as e:  # normal error handling
             log.error(e)
@@ -113,12 +124,9 @@ def start_server(host):
             invoke = False
     except KeyError:
         invoke = False
-        log.error("Lack of configuration. Used variables: {} {} {} {} {}"
-                  .format(settings.IS_DIR_ENV_VAR,
-                          settings.SSH_ADDRESS_ENV_VAR,
-                          settings.SSH_PORT_ENV_VAR,
-                          settings.IS_NODE_USERNAME_ENV_VAR,
-                          settings.IS_NODE_PRIVKEY_ENV_VAR))
+        log.error("Lack of configuration. Used variables: {} {}".format(
+            settings.IS_DIR_ENV_VAR, settings.INSTANCE_NAME_ENV_VAR
+        ))
     return invoke
 
 
@@ -148,10 +156,7 @@ def check_stop_status(host) -> bool:
     :return: True if stopped, False otherwise.
     """
     try:
-        username = os.environ[settings.IS_NODE_USERNAME_ENV_VAR]
-        keyfile = os.environ[settings.IS_NODE_PRIVKEY_ENV_VAR]
-        port = os.environ[settings.SSH_PORT_ENV_VAR]
-        ssh = SSHCommand(host, port, username, pathlib.Path(keyfile))
+        ssh = SSHCommand.construct(host)
         output = ssh.invoke("ps -ef | grep IS | grep -v grep")
         if not output:
             return True
@@ -161,6 +166,15 @@ def check_stop_status(host) -> bool:
             settings.IS_NODE_PRIVKEY_ENV_VAR,
             settings.SSH_PORT_ENV_VAR
         ))
-    except (Exception, errors.RemoteCommandError) as e:
+    except (Exception, errors.RemoteCommandError, AttributeError) as e:
         log.error(e)
     return False
+
+
+def clean_package_repo(host):
+    """Delete all packages from server package repository."""
+    is_dir = os.environ[settings.IS_DIR_ENV_VAR]
+    config.get_build_dir(settings.PIPELINE_REFERENCE)
+    repo_dir = is_dir / pathlib.Path('packages')
+    client = SSHCommand.construct(host)
+    client.invoke("rm -rf {}".format(repo_dir))
