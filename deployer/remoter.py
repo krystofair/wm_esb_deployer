@@ -3,6 +3,7 @@ import pathlib
 import subprocess
 import os
 import socket
+import time
 
 from . import errors, settings, config
 from .settings import log
@@ -150,14 +151,19 @@ def check_start_status(host, port=5555) -> bool:
     """
     socket.setdefaulttimeout(settings.CHECK_CONNECTION_TIMEOUT)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        log.info(f"Check connection.")
-        s.connect((host, int(port)))
-        s.close()
-        return True
-    except TimeoutError:
-        log.error("Timeout error - server started failed.")
-        return False
+    for attempt in range(settings.CHECK_START_STATUS_COUNT):
+        try:
+            log.info(f"Check connection, attempt: {attempt}")
+            s.connect((host, int(port)))
+            s.close()
+            return True
+        except TimeoutError:
+            log.error("Timeout error - server started failed.")
+            return False
+        except ConnectionRefusedError:
+            log.info(f"Connection refused, attempt: {attempt}")
+            time.sleep(settings.CHECK_START_STATUS_TIME)
+    return False
 
 
 def clean_package_repo(host):
