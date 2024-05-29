@@ -55,7 +55,7 @@ def action_build(inbound=False, changes_only=True) -> bool:
         os.makedirs(build_dir)
     except FileExistsError:
         log.error("Build for this merge request has already done.")
-        return False
+        return True
     if inbound:
         if changes_only:
             changes = build.get_changes_from_git_diff(mock=settings.mock)
