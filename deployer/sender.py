@@ -138,7 +138,7 @@ def send_to_packages_repo(ref, host):
         if not scp.send_dirs(src_dir, repo_path):
             sent = False
     except KeyError:
-        log.error("Lack of configuration for inbound folder. Used variables: {}, {}, {}, {}."
+        log.error("Lack of configuration - check out! Used variables: {}, {}, {}, {}."
                   .format(settings.IS_DIR_ENV_VAR,
                           settings.SSH_PORT_ENV_VAR,
                           settings.IS_NODE_USERNAME_ENV_VAR,
