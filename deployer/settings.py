@@ -44,7 +44,6 @@ INSTANCE_NAME_ENV_VAR = "INSTANCE_NAME"
 IS_DIR_ENV_VAR = "INTEGRATION_SERVER_DIR"
 NODES_ENV_VAR = "NODES"  # IPv4 separated by comma (,) - hosts where to send files
 # Environment - set below from gitlab pipeline.
-# Git tag name - set from gitlab pipeline
 # gitlab_user? - needed?
 REPO_DIR_ENV_VAR = 'REPO_DIR'  # not required.
 

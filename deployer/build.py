@@ -55,6 +55,7 @@ def build_package_for_inbound(name: str, ref: str, skip_check_archive_exist=Fals
         error = True
     return not error
 
+
 @functools.cache
 def is_default_package(name) -> bool:
     """
@@ -67,6 +68,7 @@ def is_default_package(name) -> bool:
         elif package == name:
             return True
     return False
+
 
 @functools.cache
 def is_package_to_exclude(package_name) -> bool:
@@ -234,7 +236,7 @@ def copy_services(build_dir: str, package: str, service_dir_list: typing.Iterabl
         try:
             src = pathlib.Path(source_dir) / pathlib.Path(service_dir)
             dst = pathlib.Path(build_dir) / package / service_dir
-            shutil.copytree(src, dst)
+            shutil.copytree(src, dst, dirs_exist_ok=True)
         except Exception as e:
             log.exception(e)
             raise

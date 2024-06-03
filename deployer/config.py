@@ -123,7 +123,7 @@ def get_build_dir(ref) -> str:
     ci_project_dir = get_env_var_or_default("CI_PROJECT_DIR", default=".")
     builds_dir = get_env_var_or_default(settings.BUILD_DIR_ENV_VAR, default=ci_project_dir)
     build_dir = "{}/build_{}".format(builds_dir, ref)
-    os.makedirs(builds_dir, exist_ok=True)
+    os.makedirs(build_dir)  # raise FileExistsError
     return build_dir
 
 

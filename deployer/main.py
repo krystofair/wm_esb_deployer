@@ -49,10 +49,9 @@ def action_build(inbound=False, changes_only=True) -> bool:
     :return: True if good, False otherwise.
     """
     ref = os.environ[settings.PIPELINE_REFERENCE]
-    build_dir = config.get_build_dir(ref)
     try:
-        log.info("Make dir for build")
-        os.makedirs(build_dir)
+        log.info("Make|get dir for build")
+        build_dir = config.get_build_dir(ref)
     except FileExistsError:
         log.error("Build for this merge request has already done.")
         return True
@@ -243,8 +242,3 @@ def clean_configuration() -> None:
     """
     environ = os.environ[settings.CI_ENVIRONMENT_NAME]
     config.clear_configuration_for_environment(environ)
-
-
-def tag_merge_request(tag_name):
-    ref = os.environ[settings.PIPELINE_REFERENCE]
-    # i tutaj już dołożyłbym jakąś paczkę z API do gitlaba dla pythona, bo ręcznie mi się nie chce tego pisać >,>
