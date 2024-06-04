@@ -161,7 +161,10 @@ def check_start_status(host, port=5555) -> bool:
             log.error("Timeout error - server started failed.")
             return False
         except ConnectionRefusedError:
-            log.info(f"Connection refused, attempt: {attempt}")
+            log.info(f"Connection refused.")
+            time.sleep(settings.CHECK_START_STATUS_TIME)
+        except Exception as e:
+            log.info(f"Another exception {e} will be supress")
             time.sleep(settings.CHECK_START_STATUS_TIME)
     return False
 
