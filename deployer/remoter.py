@@ -56,7 +56,7 @@ class SSHCommand:
             return None
 
 
-def run_is_instance(host, packages='all'):
+def run_is_instance(host, packages='all') -> bool:
     """
     Invoke command /path/to/is_instance -Dinstance.name={} -Dpackage.list={},{} at remote server
     :return:
@@ -118,7 +118,7 @@ def shutdown_server(host) -> bool:
     return False
 
 
-def start_server(host):
+def start_server(host) -> bool:
     """Start server"""
     invoke = True
     try:

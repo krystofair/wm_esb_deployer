@@ -112,18 +112,19 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
         hosts = set()
         configured_hosts = {}
         filenames_node_cfg = config.find_node_configs(env)
-        log.info("Selecting hosts - zones logic")
         for nf in filenames_node_cfg:
             node_name = nf.rstrip('.cfg')
             config.load_node_configuration(env, node_name)
             addr = os.environ[settings.SSH_ADDRESS_ENV_VAR]
             if deploy_zone:
+                log.info("Zone was set - selecting hosts")
                 zone = config.get_env_var_or_default(settings.ZONE_ENV_VAR,
                                                      default='kokianowy_rbaon_astoarnuta')
                 if zone == deploy_zone:
                     hosts.add(addr)
             if addr in configured_hosts:
-                raise errors.LoadingConfigurationError("The same address for two nodes")
+                log.error("The same address for two nodes.")
+                return False
             configured_hosts[addr] = node_name
         if not deploy_zone:
             hosts = set(os.environ[settings.NODES_ENV_VAR].split(','))
@@ -159,10 +160,13 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
                     log.error("Shutdown server command timeout. Check it.")
                     return False
             log.info("Run is_instance script")
-            remoter.run_is_instance(host)
+            if not remoter.run_is_instance(host):
+                return False
             if with_restart:
                 log.info("Start server.")
-                remoter.start_server(host)
+                if not remoter.start_server(host):
+                    log.error("Start server command failed.")
+                    return False
                 log.info("Check start status.")
                 if not remoter.check_start_status(host):
                     return False
