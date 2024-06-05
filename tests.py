@@ -184,6 +184,18 @@ class TestBuild(unittest.TestCase):
         self.assertIn("packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/utils", service_set)
         self.assertNotIn("packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub", service_set)
 
+    def test_build_packages_for_is_instance(self):
+        diff_line = ["packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/priv/translateCommonErrors/flow.xml",
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/priv/translateCommonErrors/node.ndf",
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/flow.xml",
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/updateCFService/node.ndf",
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/order/pub/node.idf",
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/service/pub/handleModifyCFServiceDunningStatusResult/node.ndf",
+                     "packages/TpOssChannelJazz/ns/tp/oss/channel/jazz/service/pub/handleModifyCFServiceDunningStatusResult/flow.xml"]
+        service_set = build.get_services_from_changes(diff_line)  # get first element from set.
+        package_set = build.get_packages_from_changes(diff_line)
+        build.build_packages_for_is_instance("TEST_IS_INSTANCE_BUILD", package_set, service_set)
+
     def test_get_packages_from_changes(self):
         # TODO: more tests!
         packages = build.get_packages_from_changes([

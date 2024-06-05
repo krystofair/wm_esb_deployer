@@ -15,11 +15,14 @@ from .git import GitOperation
 
 def build_packages_for_is_instance(build_dir, packages, services):
     for package in packages:
-        create_empty_package(package, build_dir)
         services_to_copy = list(filter(lambda x: package in x.split('/'), services))
-        common_names_svc = map(extract_is_style_service_name, services_to_copy)
-        log.info("In package {}; Copying services: {}".format(package, ', '.join(common_names_svc)))
-        copy_services(build_dir, package, services_to_copy)
+        if not services_to_copy:
+            log.info("Any services were changed, so ->%s<- won't be included" % package)
+        else:
+            create_empty_package(package, build_dir)
+            common_names_svc = map(extract_is_style_service_name, services_to_copy)
+            log.info("In package {}; Copying services: {}".format(package, ', '.join(common_names_svc)))
+            copy_services(build_dir, package, services_to_copy)
 
 
 def build_package_for_inbound(name: str, ref: str, skip_check_archive_exist=False) -> bool:
@@ -38,7 +41,7 @@ def build_package_for_inbound(name: str, ref: str, skip_check_archive_exist=Fals
         os.makedirs(build_dir, exist_ok=True)
         if 'zip' in [n for n, _ in shutil.get_archive_formats()]:
             shutil.make_archive(str(pathlib.Path(build_dir) / name),
-                                'zip', root_dir=str(source_dir/name))
+                                'zip', root_dir=str(source_dir / name))
             if not skip_check_archive_exist:
                 try:
                     if not [file for file in os.scandir(build_dir) if file.name == f"{name}.zip"]:
@@ -143,7 +146,8 @@ def extract_is_style_service_name(diff_line: str, first_parts=None) -> str:
         if not first_parts:
             first_parts = ['tp']
         parts = diff_line.split('/')
-        _ = parts.pop()
+        if '.' in parts[-1]:
+            _ = parts.pop()
         index = None
         for first_part in first_parts:
             try:
