@@ -26,10 +26,10 @@ class SSHCommand:
         ).split(' ')
         try:
             process = subprocess.run(cmd_args, capture_output=True, encoding='utf-8',
-                                     timeout=settings.SUBPROCESS_CMD_TIMEOUT)
-            if process.returncode != 0:
-                raise errors.RemoteCommandError(process.stderr)
+                                     timeout=settings.SUBPROCESS_CMD_TIMEOUT, check=True)
             return process.stdout
+        except subprocess.CalledProcessError as e:
+            return e.stdout or e.stderr or e
         except Exception as e:
             log.exception(e)
             raise
@@ -42,7 +42,7 @@ class SSHCommand:
         """
         try:
             ip = host
-            port = config.get_env_var_or_default(os.environ[settings.SSH_PORT_ENV_VAR], default='22')
+            port = config.get_env_var_or_default(settings.SSH_PORT_ENV_VAR, default='22')
             username = os.environ[settings.IS_NODE_USERNAME_ENV_VAR]
             private_key_filepath = os.environ[settings.IS_NODE_PRIVKEY_ENV_VAR]
             return SSHCommand(ip, port, username, pathlib.Path(private_key_filepath))
@@ -107,8 +107,9 @@ def shutdown_server(host) -> bool:
         ssh = SSHCommand.construct(host)
         # ssh = SSHCommand(ssh_host, ssh_port, is_username, pathlib.Path(is_private_key_filepath))
         output = ssh.invoke(script_path)
-        if "Stopped" in output:
+        if (output and "Stopped" in output) or not output:
             return True
+        log.error(output)
     except KeyError:
         log.error("Lack of configuration. Used variables: {} {}".format(
             settings.IS_DIR_ENV_VAR, settings.INSTANCE_NAME_ENV_VAR

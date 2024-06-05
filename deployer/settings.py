@@ -62,7 +62,7 @@ SOURCE_CODE_EXT = ("xml", "java", "frag", "ndf")  # edit this if something missi
 SUBPROCESS_CMD_TIMEOUT = 300  # timeout in seconds.
 CHECK_CONNECTION_TIMEOUT = 90  # in seconds
 CHECK_START_STATUS_TIME = 30  # in seconds, waiting after execute shutdown command.
-CHECK_START_STATUS_COUNT = 120  # how many times check before return False
+CHECK_START_STATUS_COUNT = 60  # how many times check before return False
 # WHOLE_TIME = CHECK_STOP_STATUS_TIME * CHECK_STOP_STATUS_COUNT
 
 PACKAGES_TO_EXCLUDE = ["TpOssAdministrativeTools", "TpOssConfig", "TpOssConnectorChannel*"]
