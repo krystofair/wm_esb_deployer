@@ -227,15 +227,18 @@ def save_config_from_yaml() -> None:
     path = config_dir / pathlib.Path(env_name)
     os.makedirs(path, exist_ok=True)
     try:
-        with open(path / filename, 'x', encoding='utf-8') as cfg:
+        if os.path.exists(path / filename):
+            log.info("Configuration for %s changed - overridden." % filename)
+        with open(path / filename, 'w', encoding='utf-8') as cfg:
             for key in keys:
                 try:
                     cfg.write(f"{key} = {os.environ[key]}\n")
                 except KeyError:
                     continue
     except FileExistsError:
-        log.error("Configuration already exists. You have to manually clean it up and retry if it changed.")
+        log.error("Configuration already exists, but should be overridden and this error not show up.")
         exit(-1)
+    exit(0)
 
 
 def clean_configuration() -> None:
