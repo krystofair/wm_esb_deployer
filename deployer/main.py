@@ -127,8 +127,14 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
                 return False
             configured_hosts[addr] = node_name
         if not deploy_zone:
-            hosts = set(os.environ[settings.NODES_ENV_VAR].split(','))
+            hosts = set()
+            nodes = config.get_env_var_or_default(settings.NODES_ENV_VAR, default=None)
+            if nodes:
+                hosts |= set(filter(None, nodes.split(',')))
             hosts |= configured_hosts.keys()
+            if not hosts:
+                log.error("Any host was configured")
+                return False
     except KeyError as e:
         log.error(e)
         return False
