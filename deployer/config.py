@@ -56,7 +56,9 @@ def load_config(env: str, node: str) -> None:
             lines = filter(lambda x: not x.startswith('#'), lines)
             for line in lines:
                 key, value = line.split('=')
-                os.environ[key.strip()] = value.strip()
+                k, v = key.strip(), value.strip()
+                log.info(f"{k} = {v}")
+                os.environ[k] = v
     except (ValueError, OSError, FileNotFoundError, KeyError) as e:
         log.exception(e)
         raise errors.LoadingConfigurationError(env, node)

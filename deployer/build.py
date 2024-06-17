@@ -6,6 +6,7 @@ import pathlib
 import os
 import itertools
 import typing
+import json
 from datetime import datetime
 
 from . import settings, config
@@ -164,16 +165,6 @@ def extract_is_style_service_name(diff_line: str, first_parts=None) -> str:
     return ""
 
 
-def add_file_cicd_version_to_path(path):
-    """Add to `path` cicd version in format {project_name};{commit_sha};{dt_stamp}"""
-    project_name = os.environ[settings.CI_PROJECT_NAME] if settings.CI_PROJECT_NAME in os.environ else '-'
-    commit_sha = os.environ[settings.CI_COMMIT_SHA] if settings.CI_COMMIT_SHA in os.environ else '-'
-    tag_name = os.environ[settings.CI_COMMIT_TAG] if settings.CI_COMMIT_TAG in os.environ else '-'
-    dt_stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(f"{path}/cicd.version", 'w', encoding='utf-8') as cicd_version_file:
-        cicd_version_file.write(f"{project_name};{commit_sha};{tag_name};{dt_stamp}")
-
-
 def get_packages_from_changes(changes) -> set:
     """
     Collect whole packages (TpOss*, etc.) from changes line produced by `git diff` command.
@@ -244,3 +235,50 @@ def copy_services(build_dir: str, package: str, service_dir_list: typing.Iterabl
         except Exception as e:
             log.exception(e)
             raise
+
+
+class Signer:
+    """Signer object is for sign package or service to describe when was built
+    and where was sent to."""
+    def __init__(self, stamp=None):
+        if not stamp:
+            # generate timestamp for
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            commit_sha = config.get_env_var_or_default(settings.CI_COMMIT_SHA, default='-')
+            tag_name = config.get_env_var_or_default(settings.CI_COMMIT_TAG, default='-')
+            project_name = config.get_env_var_or_default(settings.CI_PROJECT_NAME, default='-')
+            merge_request = config.get_env_var_or_default(settings.PIPELINE_REFERENCE, default='-')
+            self.stamp = {
+                "project": project_name,
+                "timestamp": timestamp,
+                "commit sha": commit_sha,
+                "tag name": tag_name,
+                "reference(MR)": merge_request,
+                "hosts": []
+            }
+        else:
+            self.stamp = stamp
+
+    def add_host_to_stamp(self, host):
+        self.stamp['hosts'].append(host)
+
+    def write_stamp(self, path):
+        stamp_path = path / pathlib.Path("cicd_version.json")
+        with open(stamp_path, 'w', encoding='utf-8') as stamp_file:
+            return json.dump(self.stamp, stamp_file)
+
+    @staticmethod
+    def read_stamp(path):
+        stamp_path = path / pathlib.Path("cicd_version.json")
+        with open(stamp_path, 'r', encoding='utf-8') as stamp_file:
+            return json.load(stamp_file)
+
+    @staticmethod
+    def get_hosts(path):
+        hosts = []
+        try:
+            stamp = Signer.read_stamp(path)
+            hosts = stamp['hosts']
+        except FileNotFoundError:
+            pass
+        return hosts

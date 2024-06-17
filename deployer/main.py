@@ -141,7 +141,13 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
     except errors.LoadingConfigurationError as e:
         log.error(e)
         return False
+    signer = build.Signer()
     for host in hosts:
+        build_dir = config.get_build_dir(ref)
+        hosts_already_get = build.Signer.get_hosts(build_dir)
+        if host in hosts_already_get:
+            log.info(f"For this host {host} packages already sent.")
+            continue
         log.info("Load global configuration of {}".format(env))
         config.load_configuration(env)
         try:
@@ -155,6 +161,9 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
             if not sender.send_to_inbound(ref, host):
                 log.error(f"Sending packages for host {host} to inbound for environment {env} failed")
                 return False
+            signer.add_host_to_stamp(host)
+            signer.write_stamp(build_dir)
+            log.info("Host {} get packages".format(host))
         else:
             log.info("Sending packages to repository dir at host {}".format(host))
             if not sender.send_to_packages_repo(ref, host):

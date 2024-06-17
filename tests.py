@@ -281,3 +281,44 @@ class TestRemoteCommand(unittest.TestCase):
     def test_check_stop_status(self):
         self.skipTest("On local virtual machine does not have IS instance.")
         remoter.check_stop_status('192.168.56.109')
+
+
+class TestSigner(unittest.TestCase):
+    HOST = '192.168.56.203'
+
+    def setUp(self) -> None:
+        os.mkdir('build_SIGNER')
+        self.bd = config.get_build_dir('SIGNER')
+
+    def tearDown(self) -> None:
+        shutil.rmtree('build_SIGNER')
+
+    def test_no_stamp_file_yet(self):
+        hosts = build.Signer.get_hosts(self.bd)
+        self.assertTrue(not hosts)
+        self.assertEqual(type(hosts), list)
+
+    def test_host_already_get(self):
+        # dependency test - there is a better way to do it
+        self.test_write_stamp_and_add_hosts()
+        build_dir = config.get_build_dir("SIGNER")
+        hosts = build.Signer.get_hosts(build_dir)
+        self.assertIn(TestSigner.HOST, hosts)
+
+    def test_write_stamp_and_add_hosts(self):
+        os.environ[settings.CI_COMMIT_TAG] = 'TEST_TAG'
+        s = build.Signer()
+        s.add_host_to_stamp(TestSigner.HOST)
+        s.write_stamp(self.bd)
+        self.assertTrue(os.path.exists(f"{self.bd}/cicd_version.json"))
+        stamp = s.read_stamp(self.bd)
+        self.assertEqual(stamp['project'], '-')
+        self.assertEqual(stamp['tag name'], 'TEST_TAG')
+
+    def test_add_another_hosts_to_stamp(self):
+        self.test_write_stamp_and_add_hosts()
+        s = build.Signer.read_stamp(self.bd)
+        signer = build.Signer(s)
+        signer.add_host_to_stamp("10.0.0.1")
+        signer.write_stamp(self.bd) # write stamp where already is.
+        self.assertIn("10.0.0.1", build.Signer.get_hosts(self.bd))
