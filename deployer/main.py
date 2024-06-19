@@ -75,7 +75,8 @@ def action_build(inbound=False, changes_only=True) -> bool:
         packages = build.get_all_package()
         for package in packages:
             source_dir = settings.SRC_DIR / pathlib.Path(package)
-            os.symlink(source_dir, build_dir, target_is_directory=True)
+            destination_dir = build_dir / pathlib.Path(package)
+            os.symlink(source_dir, destination_dir, target_is_directory=True)
     else:
         log.info("Set up build for is_instance script deploying.")
         changes = build.get_changes_from_git_diff(settings.mock)
