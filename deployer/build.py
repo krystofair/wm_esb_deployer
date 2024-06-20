@@ -225,7 +225,7 @@ def copy_services(build_dir: str, package: str, service_dir_list: typing.Iterabl
     :param build_dir: is buiding directory where new package are created and to that package services are copied.
     :return: True if copy all service well, False otherwise.
     """
-    source_dir = config.get_source_dir() / package  # $REPO_DIR/packages/$package
+    source_dir = config.get_source_dir() / package  # $REPO_DIR/packages/$package or $CI_PROJECT_DIR/packages/$package
     service_dirs = [x.split(package)[1][1:] for x in service_dir_list]  # /ns/* # and get rid of '/'
     for service_dir in service_dirs:
         try:

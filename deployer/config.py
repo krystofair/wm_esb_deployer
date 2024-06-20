@@ -130,7 +130,8 @@ def get_build_dir(ref) -> str:
 
 
 def get_source_dir() -> pathlib.Path:
-    repository = get_env_var_or_default(settings.REPO_DIR_ENV_VAR, default='.')
+    project_dir = os.environ[settings.CI_PROJECT_DIR]
+    repository = get_env_var_or_default(settings.REPO_DIR_ENV_VAR, default=project_dir)
     sources_dir_name = settings.SRC_DIR
     return pathlib.Path(repository) / sources_dir_name
 

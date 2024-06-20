@@ -73,8 +73,9 @@ def action_build(inbound=False, changes_only=True) -> bool:
                 return False
     elif not changes_only:
         packages = build.get_all_package()
+        sources_dir = config.get_source_dir()
         for package in packages:
-            source_dir = settings.SRC_DIR / pathlib.Path(package)
+            source_dir = sources_dir / pathlib.Path(package)
             destination_dir = build_dir / pathlib.Path(package)
             os.symlink(source_dir, destination_dir, target_is_directory=True)
     else:
