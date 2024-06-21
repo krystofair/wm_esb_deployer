@@ -10,7 +10,6 @@ import os
 import pathlib
 import sys
 import argparse
-import time
 
 from . import (config, errors, sender, settings, build, remoter)
 from .settings import log
@@ -188,6 +187,24 @@ def action_deploy(inbound=False, with_restart=False) -> bool:
                 if not remoter.check_start_status(host):
                     return False
     return True
+
+
+def clean_repo_after_instance_script_done():
+    """
+    Delete non-core, deployed packages from $IS_DIR/packages.
+    To be prepared for another deployment.
+    """
+    env = os.environ[settings.CI_ENVIRONMENT_NAME]
+    for loader in config.CfgLoader(env):
+        ip_address = os.environ[settings.SSH_ADDRESS_ENV_VAR]
+        log.info("Clear packages repository for %s" % (ip_address, ))
+        with loader:
+            invoker = remoter.SSHCommand.construct(ip_address)
+            integration_server_dir = os.environ[settings.IS_DIR_ENV_VAR]
+            invoker.invoke(f"rm -rf {integration_server_dir}/packages/*")
+        if loader.error:
+            exit(-1)
+    exit(0)
 
 
 def main():

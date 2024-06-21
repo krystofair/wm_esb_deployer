@@ -9,12 +9,13 @@ authors = [
 ]
 
 name = 'esbdeployer'
-version = '6.2.2'
+version = '7.0.0'
 
 [project.scripts]
 deployer = "deployer.main:main"
 save_config_from_yaml = "deployer.main:save_config_from_yaml"
 clean_configuration_per_environment = "deployer.main:clean_configuration"
+clean_packages_repository = "deployer.main:clean_repo_after_instance_script_done"
 
 [tool.setuptools]
 packages = [

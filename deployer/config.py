@@ -143,3 +143,44 @@ def get_list_env_var_from_settings() -> list:
     :return: list of (name, value) tuple of variables.
     """
     return [member for member in inspect.getmembers(settings) if member[0].endswith('_ENV_VAR')]
+
+
+# This class break compatibility with NODES_ENV_VAR.
+class CfgLoader:
+    """
+    Configuration Loader for done things,
+    which should be followed by loading specific configuration of environment and node.
+    The CfgLoader class breaks compatibility with setting nodes by `settings.NODES_ENV_VAR`.
+    Using example:
+    for loader in CfgLoader(env):
+        with loader:
+            # here we have loaded configuration properly for each configured nodes in configs.
+            ...
+    """
+    def __init__(self, env):
+        self.environment = env
+        self.nodes = find_node_configs(env)
+        self.pointer = -1
+        self.error = False
+
+    def __current_node(self):
+        return self.nodes[self.pointer]
+
+    def __enter__(self):
+        load_configuration(self.environment)
+        load_node_configuration(self.environment, self.__current_node())
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.pointer + 1 < len(self.nodes):
+            self.pointer += 1
+        else:
+            raise StopIteration
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            log.error(f"{exc_type}: {exc_val}\n{exc_tb}")
+        self.error = True
