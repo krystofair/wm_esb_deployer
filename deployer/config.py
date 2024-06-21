@@ -159,7 +159,7 @@ class CfgLoader:
     """
     def __init__(self, env):
         self.environment = env
-        self.nodes = find_node_configs(env)
+        self.nodes = [x.strip('.cfg') for x in find_node_configs(env)]
         self.pointer = -1
         self.error = False
 

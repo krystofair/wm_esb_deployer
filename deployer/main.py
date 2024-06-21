@@ -196,9 +196,9 @@ def clean_repo_after_instance_script_done():
     """
     env = os.environ[settings.CI_ENVIRONMENT_NAME]
     for loader in config.CfgLoader(env):
-        ip_address = os.environ[settings.SSH_ADDRESS_ENV_VAR]
-        log.info("Clear packages repository for %s" % (ip_address, ))
         with loader:
+            ip_address = os.environ[settings.SSH_ADDRESS_ENV_VAR]
+            log.info("Clear packages repository for %s" % (ip_address,))
             invoker = remoter.SSHCommand.construct(ip_address)
             integration_server_dir = os.environ[settings.IS_DIR_ENV_VAR]
             invoker.invoke(f"rm -rf {integration_server_dir}/packages/*")
