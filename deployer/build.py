@@ -232,6 +232,9 @@ def copy_services(build_dir: str, package: str, service_dir_list: typing.Iterabl
             src = pathlib.Path(source_dir) / pathlib.Path(service_dir)
             dst = pathlib.Path(build_dir) / package / service_dir
             shutil.copytree(src, dst, dirs_exist_ok=True)
+        except FileNotFoundError:
+            log.error(f"Probably there was path changes for service, so service path {service_dir} was skipped.")
+            pass
         except Exception as e:
             log.exception(e)
             raise
