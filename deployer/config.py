@@ -145,13 +145,15 @@ def get_list_env_var_from_settings() -> list:
     return [member for member in inspect.getmembers(settings) if member[0].endswith('_ENV_VAR')]
 
 
-# This class break compatibility with NODES_ENV_VAR.
 class CfgLoader:
     """
     Configuration Loader for done things,
     which should be followed by loading specific configuration of environment and node.
-    The CfgLoader class breaks compatibility with setting nodes by `settings.NODES_ENV_VAR`.
+    This class only prepare environment for nodes, the rest you should do for your own, like i.e. loading global
+    configuration and collect variables available before loading nodes.
     Using example:
+    load_configuration(env);
+    # get values from variables
     for loader in CfgLoader(env):
         with loader:
             # here we have loaded configuration properly for each configured nodes in configs.

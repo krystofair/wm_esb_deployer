@@ -195,15 +195,28 @@ def clean_repo_after_instance_script_done():
     To be prepared for another deployment.
     """
     env = os.environ[settings.CI_ENVIRONMENT_NAME]
-    for loader in config.CfgLoader(env):
+    loader = config.CfgLoader(env)
+    config.load_configuration(env)
+    hosts_from_nodes = config.get_env_var_or_default(settings.NODES_ENV_VAR, default=None)
+    hosts = set()
+    if hosts_from_nodes:
+        hosts = set(hosts_from_nodes.split(','))
+    for node_loaded_config_in_background in loader:
         with loader:
             ip_address = os.environ[settings.SSH_ADDRESS_ENV_VAR]
+            if ip_address in hosts:
+                hosts.remove(ip_address)
             log.info("Clear packages repository for %s" % (ip_address,))
             invoker = remoter.SSHCommand.construct(ip_address)
             integration_server_dir = os.environ[settings.IS_DIR_ENV_VAR]
             invoker.invoke(f"rm -rf {integration_server_dir}/packages/*")
         if loader.error:
             exit(-1)
+    for host in hosts:
+        config.load_configuration(env)
+        invoker = remoter.SSHCommand.construct(host)
+        integration_server_dir = os.environ[settings.IS_DIR_ENV_VAR]
+        invoker.invoke(f"rm -rf {integration_server_dir}/packages/*")
     exit(0)
 
 
