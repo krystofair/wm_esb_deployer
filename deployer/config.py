@@ -185,4 +185,4 @@ class CfgLoader:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
             log.error(f"{exc_type}: {exc_val}\n{exc_tb}")
-        self.error = True
+            self.error = True
